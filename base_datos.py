@@ -1,5 +1,6 @@
-import streamlit as st
+import streamlit as st # Puedes dejarlo o quitarlo si ya no usarás Streamlit
 import pandas as pd
+import os  # <--- AGREGA ESTA LÍNEA
 from supabase import create_client
 from datetime import datetime, date, timedelta
 
