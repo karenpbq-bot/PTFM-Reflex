@@ -9,8 +9,14 @@ from datetime import datetime, date, timedelta
 # =========================================================
 
 def conectar():
-    url = st.secrets["supabase"]["url"]
-    key = st.secrets["supabase"]["key"]
+    """Conexión configurada para Reflex Cloud (Variables de Entorno)"""
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    
+    # Validación de seguridad por si las variables no están cargadas
+    if not url or not key:
+        raise ValueError("Error: No se encontraron las credenciales SUPABASE_URL o SUPABASE_KEY en la configuración.")
+        
     return create_client(url, key)
 
 def inicializar_bd():
