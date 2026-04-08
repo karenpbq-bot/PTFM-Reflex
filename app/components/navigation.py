@@ -40,22 +40,15 @@ def sidebar() -> rx.Component:
                     rx.el.div(
                         rx.icon("box", class_name="h-8 w-8 text-blue-600"),
                         rx.el.span(
-                            "PTFM", class_name="ml-2 text-2xl font-bold text-gray-900"
+                            "Practiformas",
+                            class_name="ml-2 text-xl font-bold text-gray-900",
                         ),
-                        class_name=rx.cond(
-                            SidebarState.sidebar_visible,
-                            "flex items-center px-4 py-6 border-b border-gray-100",
-                            "hidden",
-                        ),
+                        class_name="flex items-center",
                     ),
-                    class_name="h-20",
-                ),
-                rx.cond(
-                    SidebarState.sidebar_visible,
                     rx.el.div(
                         rx.icon(
                             "circle-user-round",
-                            class_name="h-8 w-8 text-gray-400 shrink-0",
+                            class_name="h-6 w-6 text-gray-400 shrink-0",
                         ),
                         rx.el.div(
                             rx.el.p(
@@ -68,9 +61,13 @@ def sidebar() -> rx.Component:
                             ),
                             class_name="flex flex-col min-w-0",
                         ),
-                        class_name="flex items-center gap-3 px-4 py-3 border-b border-gray-100 animate-in fade-in duration-300",
+                        class_name="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100",
                     ),
-                    None,
+                    class_name=rx.cond(
+                        SidebarState.sidebar_visible,
+                        "px-4 py-4 border-b border-gray-100",
+                        "hidden",
+                    ),
                 ),
                 rx.el.nav(
                     rx.el.div(
