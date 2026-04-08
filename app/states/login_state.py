@@ -6,11 +6,16 @@ import logging
 class LoginState(rx.State):
     username: str = ""
     password: str = ""
+    show_password: bool = False
     is_authenticated: bool = False
     user_role: str = ""
     user_id: int = 0
     user_full_name: str = ""
     error_message: str = ""
+
+    @rx.event
+    def toggle_password_visibility(self):
+        self.show_password = not self.show_password
 
     @rx.event
     def login(self, form_data: dict):

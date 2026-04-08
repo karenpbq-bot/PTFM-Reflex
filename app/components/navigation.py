@@ -1,5 +1,6 @@
 import reflex as rx
 from app.states.navigation_state import SidebarState
+from app.states.login_state import LoginState
 
 
 def nav_item(label: str, icon: str, href: str) -> rx.Component:
@@ -59,6 +60,23 @@ def sidebar() -> rx.Component:
                         class_name="flex flex-col gap-2 p-4",
                     ),
                     class_name="flex-1 overflow-y-auto",
+                ),
+                rx.el.div(
+                    rx.el.div(class_name="border-t border-gray-100 mx-4"),
+                    rx.el.button(
+                        rx.icon("log-out", class_name="h-5 w-5 shrink-0"),
+                        rx.el.span(
+                            "Cerrar Sesión",
+                            class_name=rx.cond(
+                                SidebarState.sidebar_visible,
+                                "ml-3 whitespace-nowrap overflow-hidden",
+                                "hidden",
+                            ),
+                        ),
+                        on_click=LoginState.logout,
+                        class_name="flex items-center w-full p-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors duration-200 mt-2",
+                    ),
+                    class_name="p-4",
                 ),
                 class_name="flex flex-col h-full bg-white border-r border-gray-200",
             ),

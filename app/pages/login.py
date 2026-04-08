@@ -34,12 +34,27 @@ def login_page() -> rx.Component:
                             "Contraseña",
                             class_name="block text-sm font-medium text-gray-700 mb-1",
                         ),
-                        rx.el.input(
-                            name="password",
-                            type="password",
-                            placeholder="••••••••",
-                            required=True,
-                            class_name="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        rx.el.div(
+                            rx.el.input(
+                                name="password",
+                                type=rx.cond(
+                                    LoginState.show_password, "text", "password"
+                                ),
+                                placeholder="••••••••",
+                                required=True,
+                                class_name="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                            ),
+                            rx.el.button(
+                                rx.cond(
+                                    LoginState.show_password,
+                                    rx.icon("eye-off", class_name="h-5 w-5"),
+                                    rx.icon("eye", class_name="h-5 w-5"),
+                                ),
+                                on_click=LoginState.toggle_password_visibility,
+                                type="button",
+                                class_name="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 focus:outline-none",
+                            ),
+                            class_name="relative",
                         ),
                         class_name="mb-6",
                     ),
