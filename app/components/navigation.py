@@ -51,7 +51,7 @@ def sidebar() -> rx.Component:
                     class_name="h-20",
                 ),
                 rx.cond(
-                    SidebarState.sidebar_visible & (LoginState.user_full_name != ""),
+                    SidebarState.sidebar_visible,
                     rx.el.div(
                         rx.icon(
                             "circle-user-round",
