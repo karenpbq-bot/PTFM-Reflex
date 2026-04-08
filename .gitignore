@@ -1,11 +1,4 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.env
-.venv
-env/
-
-# Reflex
 .web/
+.states/
+__pycache__/
+/app/__pycache__/

@@ -1,0 +1,9 @@
+column_name,data_type
+id,integer
+created_at,timestamp with time zone
+proyecto_id,integer
+supervisor_id,integer
+tipo_requerimiento,text
+categoria,text
+detalles,jsonb
+estado,text

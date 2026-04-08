@@ -1,0 +1,9 @@
+column_name,data_type
+id,integer
+proyecto_id,integer
+ubicacion,text
+tipo,text
+ml,double precision
+created_at,timestamp with time zone
+ctd,bigint
+codigo_etiqueta,text

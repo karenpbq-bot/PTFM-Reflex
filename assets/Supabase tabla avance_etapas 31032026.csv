@@ -1,0 +1,12 @@
+column_name,data_type,is_nullable
+codigo,text,NO
+proyecto_nombre,text,YES
+cliente,text,YES
+av_diseno,double precision,YES
+av_fabricacion,double precision,YES
+av_traslado,double precision,YES
+av_instalacion,double precision,YES
+av_entrega,double precision,YES
+ultima_actualizacion,timestamp with time zone,YES
+fecha_inicio_real,date,YES
+fecha_fin_real,date,YES

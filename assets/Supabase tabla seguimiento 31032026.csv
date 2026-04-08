@@ -1,0 +1,8 @@
+column_name,data_type
+id,integer
+producto_id,integer
+hito,text
+fecha,text
+observaciones,text
+created_at,timestamp with time zone
+supervisor_id,integer

@@ -1,0 +1,22 @@
+column_name,data_type
+id,integer
+codigo,text
+proyecto_text,text
+cliente,text
+estatus,text
+avance,double precision
+partida,text
+created_at,timestamp with time zone
+supervisor_id,integer
+p_dis_i,date
+p_dis_f,date
+p_fab_i,date
+p_fab_f,date
+p_tra_i,date
+p_tra_f,date
+p_ins_i,date
+p_ins_f,date
+p_ent_i,date
+p_ent_f,date
+f_ini,date
+f_fin,date

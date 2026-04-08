@@ -1,0 +1,7 @@
+column_name,data_type
+id,integer
+codigo_proyecto,text
+producto_id,bigint
+hito,text
+logrado,integer
+valor_porcentual,double precision

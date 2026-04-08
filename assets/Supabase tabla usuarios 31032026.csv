@@ -1,0 +1,7 @@
+column_name,data_type
+id,integer
+nombre_usuario,text
+contrasena,text
+rol,text
+nombre_completo,text
+created_at,timestamp with time zone
