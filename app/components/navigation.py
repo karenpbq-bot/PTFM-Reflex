@@ -50,6 +50,25 @@ def sidebar() -> rx.Component:
                     ),
                     class_name="h-20",
                 ),
+                rx.el.div(
+                    rx.icon("circle-user-round", class_name="h-8 w-8 text-gray-400"),
+                    rx.el.div(
+                        rx.el.p(
+                            LoginState.user_full_name,
+                            class_name="text-sm font-bold text-gray-900 leading-tight",
+                        ),
+                        rx.el.p(
+                            LoginState.user_role,
+                            class_name="text-xs text-gray-500 font-medium",
+                        ),
+                        class_name="flex flex-col min-w-0",
+                    ),
+                    class_name=rx.cond(
+                        SidebarState.sidebar_visible,
+                        "flex items-center gap-3 px-4 py-3 border-b border-gray-100 animate-in fade-in duration-300",
+                        "hidden",
+                    ),
+                ),
                 rx.el.nav(
                     rx.el.div(
                         nav_item("Proyectos", "folder-kanban", "/proyectos"),
