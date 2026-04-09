@@ -351,4 +351,54 @@ class SeguimientoState(rx.State):
 
     @rx.event
     def export_seguimiento(self):
-        pass
+        if not self.selected_project_id or not self.all_products:
+            return rx.window_alert("No hay datos para exportar.")
+        try:
+            import pandas as pd
+            import io
+
+            supabase = conectar()
+            if not supabase:
+                return rx.window_alert("Error de conexión.")
+            prod_ids = [p["id"] for p in self.all_products]
+            res_seg = (
+                supabase.table("seguimiento")
+                .select("producto_id, hito, fecha")
+                .in_("producto_id", prod_ids)
+                .execute()
+            )
+            seg_lookup = {}
+            if res_seg.data:
+                for r in res_seg.data:
+                    seg_lookup[r["producto_id"], r["hito"]] = r.get("fecha", "")
+            hitos = [
+                "Diseñado",
+                "Fabricado",
+                "Material en Obra",
+                "Material en Ubicación",
+                "Instalación de Estructura",
+                "Instalación de Puertas o Frentes",
+                "Revisión y Observaciones",
+                "Entrega",
+            ]
+            rows = []
+            for p in self.all_products:
+                row = {
+                    "Código": p["codigo_etiqueta"],
+                    "Ubicación": p["ubicacion"],
+                    "Tipo": p["tipo"],
+                    "ML": p["ml"],
+                    "Ctd": p["ctd"],
+                }
+                for h in hitos:
+                    row[h] = seg_lookup.get((p["id"], h), "")
+                rows.append(row)
+            df = pd.DataFrame(rows)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Avance")
+            filename = f"Avance_{self.selected_project_codigo or 'proyecto'}.xlsx"
+            return rx.download(data=output.getvalue(), filename=filename)
+        except Exception as e:
+            logging.exception(f"Error exporting: {e}")
+            return rx.window_alert(f"Error al exportar: {str(e)}")

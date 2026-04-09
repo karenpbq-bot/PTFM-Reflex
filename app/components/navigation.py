@@ -102,7 +102,7 @@ def sidebar() -> rx.Component:
             class_name=rx.cond(
                 SidebarState.sidebar_visible,
                 "fixed inset-y-0 left-0 z-50 w-64 transition-all duration-300 ease-in-out transform translate-x-0 shadow-lg lg:shadow-none",
-                "fixed inset-y-0 left-0 z-50 w-0 transition-all duration-300 ease-in-out transform -translate-x-full lg:translate-x-0",
+                "fixed inset-y-0 left-0 z-50 w-0 transition-all duration-300 ease-in-out transform -translate-x-full",
             ),
         ),
     )

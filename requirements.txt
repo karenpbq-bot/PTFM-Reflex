@@ -4,3 +4,4 @@ reflex==0.8.26
 pandas
 faker
 streamlit
+openpyxl

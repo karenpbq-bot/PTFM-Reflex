@@ -195,7 +195,7 @@ def seguimiento_content() -> rx.Component:
                             ),
                         ),
                         rx.el.button(
-                            "Exportar Excel",
+                            "Exportar Avance",
                             on_click=SeguimientoState.export_seguimiento,
                             class_name="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors",
                         ),
