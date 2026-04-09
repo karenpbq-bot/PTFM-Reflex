@@ -266,12 +266,7 @@ class SeguimientoState(rx.State):
             for c in self.pending_checks:
                 parts = c.split("_", 1)
                 lote.append(
-                    {
-                        "producto_id": int(parts[0]),
-                        "hito": parts[1],
-                        "fecha": fecha_str,
-                        "supervisor_id": login_state.user_id,
-                    }
+                    {"producto_id": int(parts[0]), "hito": parts[1], "fecha": fecha_str}
                 )
                 self.db_checks.append(c)
             if lote:
