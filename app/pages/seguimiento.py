@@ -147,6 +147,7 @@ def seguimiento_content() -> rx.Component:
                                 rx.el.option("Sin grupo", value="none"),
                                 rx.el.option("Ubicación", value="ubicacion"),
                                 rx.el.option("Tipo", value="tipo"),
+                                rx.el.option("Sin avance", value="sin_avance"),
                                 on_change=SeguimientoState.set_group_by,
                                 value=SeguimientoState.group_by,
                                 class_name="appearance-none w-full px-4 py-2 border border-gray-200 rounded-lg bg-white",

@@ -199,7 +199,19 @@ class SeguimientoState(rx.State):
                 or self.refinement_filter.lower() in p["ubicacion"].lower()
                 or self.refinement_filter.lower() in p["tipo"].lower()
             ]
-        if self.group_by == "ubicacion":
+        if self.group_by == "sin_avance":
+            filtered = []
+            for p in prods:
+                has_any = False
+                for m in self.milestone_names:
+                    k = f"{p['id']}_{m}"
+                    if k in self.db_checks or k in self.pending_checks:
+                        has_any = True
+                        break
+                if not has_any:
+                    filtered.append(p)
+            prods = filtered
+        elif self.group_by == "ubicacion":
             prods = sorted(prods, key=lambda x: x["ubicacion"])
         elif self.group_by == "tipo":
             prods = sorted(prods, key=lambda x: x["tipo"])
