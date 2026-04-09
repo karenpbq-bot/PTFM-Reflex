@@ -31,11 +31,56 @@ def milestone_cell(
                 "h-8 w-8 rounded-lg bg-yellow-500 flex items-center justify-center transition-all hover:bg-yellow-600 shadow-sm",
                 rx.cond(
                     SeguimientoState.db_checks.contains(check_key),
-                    "h-8 w-8 rounded-lg bg-gray-400 flex items-center justify-center transition-all hover:bg-gray-500 shadow-sm",
+                    rx.match(
+                        idx,
+                        (
+                            0,
+                            "h-8 w-8 rounded-lg bg-green-400 flex items-center justify-center transition-all hover:bg-green-500 shadow-sm",
+                        ),
+                        (
+                            1,
+                            "h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center transition-all hover:bg-amber-500 shadow-sm",
+                        ),
+                        (
+                            2,
+                            "h-8 w-8 rounded-lg bg-orange-400 flex items-center justify-center transition-all hover:bg-orange-500 shadow-sm",
+                        ),
+                        "h-8 w-8 rounded-lg bg-blue-400 flex items-center justify-center transition-all hover:bg-blue-500 shadow-sm",
+                    ),
                     rx.cond(
                         SeguimientoState.pending_checks.contains(check_key),
-                        "h-8 w-8 rounded-lg bg-red-500 flex items-center justify-center transition-all hover:bg-red-600 shadow-sm animate-pulse",
-                        "h-6 w-6 rounded-lg bg-red-500/50 flex items-center justify-center transition-all hover:bg-red-500 shadow-sm mx-auto",
+                        rx.match(
+                            idx,
+                            (
+                                0,
+                                "h-8 w-8 rounded-lg bg-green-600 flex items-center justify-center transition-all hover:bg-green-700 shadow-sm animate-pulse",
+                            ),
+                            (
+                                1,
+                                "h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center transition-all hover:bg-amber-700 shadow-sm animate-pulse",
+                            ),
+                            (
+                                2,
+                                "h-8 w-8 rounded-lg bg-orange-600 flex items-center justify-center transition-all hover:bg-orange-700 shadow-sm animate-pulse",
+                            ),
+                            "h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center transition-all hover:bg-blue-700 shadow-sm animate-pulse",
+                        ),
+                        rx.match(
+                            idx,
+                            (
+                                0,
+                                "h-6 w-6 rounded-lg bg-green-500/50 flex items-center justify-center transition-all hover:bg-green-500 shadow-sm mx-auto",
+                            ),
+                            (
+                                1,
+                                "h-6 w-6 rounded-lg bg-amber-500/50 flex items-center justify-center transition-all hover:bg-amber-500 shadow-sm mx-auto",
+                            ),
+                            (
+                                2,
+                                "h-6 w-6 rounded-lg bg-orange-500/50 flex items-center justify-center transition-all hover:bg-orange-500 shadow-sm mx-auto",
+                            ),
+                            "h-6 w-6 rounded-lg bg-blue-500/50 flex items-center justify-center transition-all hover:bg-blue-500 shadow-sm mx-auto",
+                        ),
                     ),
                 ),
             ),
