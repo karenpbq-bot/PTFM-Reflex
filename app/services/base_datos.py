@@ -5,6 +5,19 @@ from datetime import datetime
 import logging
 
 
+def fetch_all_paginated(query_builder, batch_size=1000):
+    """Fetches all rows from a Supabase query, paginating in batches to avoid the 1000-row limit."""
+    all_data = []
+    offset = 0
+    while True:
+        res = query_builder.range(offset, offset + batch_size - 1).execute()
+        all_data.extend(res.data)
+        if len(res.data) < batch_size:
+            break
+        offset += batch_size
+    return all_data
+
+
 def conectar():
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
@@ -193,13 +206,10 @@ def obtener_avance_por_hitos(id_proyecto, df_productos_filtrados=None):
         if df_p.empty:
             return {h: 0.0 for h in HITOS_LIST}
         ids = df_p["id"].tolist()
-        res_seg = (
-            supabase.table("seguimiento")
-            .select("hito")
-            .in_("producto_id", ids)
-            .execute()
+        seg_data = fetch_all_paginated(
+            supabase.table("seguimiento").select("hito").in_("producto_id", ids)
         )
-        df_s = pd.DataFrame(res_seg.data)
+        df_s = pd.DataFrame(seg_data)
         avances = {}
         total = len(df_p)
         if df_s.empty:
@@ -240,15 +250,14 @@ def sincronizar_avances_estructural(codigo_p):
             return
         ids_prods = [p["id"] for p in res_prods.data]
         num_prods = len(ids_prods)
-        res_seg = (
+        seg_data = fetch_all_paginated(
             supabase.table("seguimiento")
             .select("producto_id, hito, fecha")
             .in_("producto_id", ids_prods)
-            .execute()
         )
         df_seg = (
-            pd.DataFrame(res_seg.data)
-            if res_seg.data
+            pd.DataFrame(seg_data)
+            if seg_data
             else pd.DataFrame(columns=["producto_id", "hito", "fecha"])
         )
         GRUPOS = {

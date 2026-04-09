@@ -194,6 +194,28 @@ def seguimiento_content() -> rx.Component:
                                 class_name="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors",
                             ),
                         ),
+                        rx.el.div(
+                            rx.upload.root(
+                                rx.el.div(
+                                    rx.icon("upload", class_name="h-4 w-4 mr-2"),
+                                    rx.el.span(
+                                        "Importar Avance",
+                                        class_name="text-sm font-bold",
+                                    ),
+                                    class_name="flex items-center justify-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors cursor-pointer",
+                                ),
+                                id="import_seguimiento",
+                                accept={
+                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+                                        ".xlsx"
+                                    ],
+                                    "application/vnd.ms-excel": [".xls"],
+                                },
+                                on_drop=SeguimientoState.handle_import_seguimiento,
+                                max_files=1,
+                            ),
+                            class_name="inline-block",
+                        ),
                         rx.el.button(
                             "Exportar Avance",
                             on_click=SeguimientoState.export_seguimiento,

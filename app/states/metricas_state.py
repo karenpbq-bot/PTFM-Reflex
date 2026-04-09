@@ -1,5 +1,5 @@
 import reflex as rx
-from app.services.base_datos import obtener_proyectos, conectar
+from app.services.base_datos import obtener_proyectos, conectar, fetch_all_paginated
 import logging
 from typing import Any
 import pandas as pd
@@ -201,15 +201,14 @@ class MetricasState(rx.State):
             if res_prods.data:
                 prods_df = pd.DataFrame(res_prods.data)
                 prod_ids = prods_df["id"].tolist()
-                res_seg = (
+                seg_data = fetch_all_paginated(
                     supabase.table("seguimiento")
                     .select("producto_id, hito")
                     .in_("producto_id", prod_ids)
-                    .execute()
                 )
                 seg_df = (
-                    pd.DataFrame(res_seg.data)
-                    if res_seg.data
+                    pd.DataFrame(seg_data)
+                    if seg_data
                     else pd.DataFrame(columns=["producto_id", "hito"])
                 )
                 hitos = [

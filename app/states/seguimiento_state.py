@@ -1,6 +1,10 @@
 import reflex as rx
 from typing import TypedDict, Any
-from app.services.base_datos import conectar, sincronizar_avances_estructural
+from app.services.base_datos import (
+    conectar,
+    sincronizar_avances_estructural,
+    fetch_all_paginated,
+)
 from app.states.login_state import LoginState
 from datetime import datetime
 import pandas as pd
@@ -163,16 +167,13 @@ class SeguimientoState(rx.State):
                 for r in res_prods.data
             ]
             prod_ids = [p["id"] for p in self.all_products]
-            res_seg = (
+            seg_data = fetch_all_paginated(
                 supabase.table("seguimiento")
                 .select("producto_id, hito")
                 .in_("producto_id", prod_ids)
-                .execute()
             )
-            if res_seg.data:
-                self.db_checks = [
-                    f"{r['producto_id']}_{r['hito']}" for r in res_seg.data
-                ]
+            if seg_data:
+                self.db_checks = [f"{r['producto_id']}_{r['hito']}" for r in seg_data]
             else:
                 self.db_checks = []
             self.pending_checks = []
@@ -361,16 +362,14 @@ class SeguimientoState(rx.State):
             if not supabase:
                 return rx.window_alert("Error de conexión.")
             prod_ids = [p["id"] for p in self.all_products]
-            res_seg = (
+            seg_data = fetch_all_paginated(
                 supabase.table("seguimiento")
                 .select("producto_id, hito, fecha")
                 .in_("producto_id", prod_ids)
-                .execute()
             )
             seg_lookup = {}
-            if res_seg.data:
-                for r in res_seg.data:
-                    seg_lookup[r["producto_id"], r["hito"]] = r.get("fecha", "")
+            for r in seg_data:
+                seg_lookup[r["producto_id"], r["hito"]] = r.get("fecha", "")
             hitos = [
                 "Diseñado",
                 "Fabricado",
@@ -402,3 +401,100 @@ class SeguimientoState(rx.State):
         except Exception as e:
             logging.exception(f"Error exporting: {e}")
             return rx.window_alert(f"Error al exportar: {str(e)}")
+
+    @rx.event
+    async def handle_import_seguimiento(self, files: list[rx.UploadFile]):
+        """Import seguimiento from Excel. Only updates empty cells, preserves existing data."""
+        if not self.selected_project_id or not self.all_products:
+            yield rx.window_alert("Seleccione un proyecto con productos primero.")
+            return
+        if not files:
+            return
+        try:
+            import pandas as pd
+            import io
+
+            file = files[0]
+            upload_data = await file.read()
+            df = pd.read_excel(io.BytesIO(upload_data))
+            code_col = None
+            for col_name in ["Código", "Código ID", "codigo_etiqueta"]:
+                if col_name in df.columns:
+                    code_col = col_name
+                    break
+            if code_col is None:
+                yield rx.window_alert(
+                    "El archivo no tiene columna de código (Código, Código ID)."
+                )
+                return
+            hitos = [
+                "Diseñado",
+                "Fabricado",
+                "Material en Obra",
+                "Material en Ubicación",
+                "Instalación de Estructura",
+                "Instalación de Puertas o Frentes",
+                "Revisión y Observaciones",
+                "Entrega",
+            ]
+            found_hitos = [h for h in hitos if h in df.columns]
+            if not found_hitos:
+                yield rx.window_alert(
+                    "El archivo no contiene columnas de hitos válidas."
+                )
+                return
+            code_to_id = {p["codigo_etiqueta"]: p["id"] for p in self.all_products}
+            supabase = conectar()
+            if not supabase:
+                yield rx.window_alert("Error de conexión a la base de datos.")
+                return
+            prod_ids = [p["id"] for p in self.all_products]
+            existing_data = fetch_all_paginated(
+                supabase.table("seguimiento")
+                .select("producto_id, hito")
+                .in_("producto_id", prod_ids)
+            )
+            existing_set = set()
+            for r in existing_data:
+                existing_set.add((r["producto_id"], r["hito"]))
+            lote = []
+            skipped = 0
+            for _, row in df.iterrows():
+                codigo = str(row[code_col]).strip()
+                pid = code_to_id.get(codigo)
+                if pid is None:
+                    continue
+                for h in found_hitos:
+                    cell_value = row.get(h)
+                    if pd.notna(cell_value) and str(cell_value).strip() != "":
+                        if (pid, h) not in existing_set:
+                            fecha_str = str(cell_value).strip()
+                            if hasattr(cell_value, "strftime"):
+                                fecha_str = cell_value.strftime("%d/%m/%Y")
+                            lote.append(
+                                {"producto_id": pid, "hito": h, "fecha": fecha_str}
+                            )
+                        else:
+                            skipped += 1
+            if lote:
+                for i in range(0, len(lote), 500):
+                    batch = lote[i : i + 500]
+                    supabase.table("seguimiento").upsert(
+                        batch, on_conflict="producto_id, hito"
+                    ).execute()
+                if self.selected_project_codigo:
+                    sincronizar_avances_estructural(self.selected_project_codigo)
+                yield SeguimientoState.load_products_and_seguimiento
+                yield rx.window_alert(
+                    f"Importación completada: {len(lote)} registros nuevos agregados. {skipped} ya existían y se conservaron."
+                )
+                return
+            else:
+                yield rx.window_alert(
+                    f"No se encontraron registros nuevos para importar. {skipped} ya existían en la base de datos."
+                )
+                return
+        except Exception as e:
+            logging.exception(f"Error importing seguimiento: {e}")
+            yield rx.window_alert(f"Error al importar: {str(e)}")
+            return
