@@ -40,6 +40,7 @@ class SeguimientoState(rx.State):
     db_checks: list[str] = []
     pending_checks: list[str] = []
     delete_pending: list[str] = []
+    product_notes: dict[str, str] = {}
     current_user_role: str = ""
     show_project_selector: bool = True
     show_advanced_config: bool = False
@@ -98,6 +99,10 @@ class SeguimientoState(rx.State):
         self.show_advanced_config = not self.show_advanced_config
 
     @rx.event
+    def set_product_note(self, product_id: str, value: str):
+        self.product_notes[product_id] = value
+
+    @rx.event
     def set_milestone_weight(self, hito: str, value: str):
         try:
             self.milestone_weights[hito] = float(value)
@@ -154,6 +159,7 @@ class SeguimientoState(rx.State):
             self.db_checks = []
             self.pending_checks = []
             self.delete_pending = []
+            self.product_notes = {}
             return
         try:
             login_state = await self.get_state(LoginState)
@@ -171,6 +177,7 @@ class SeguimientoState(rx.State):
                 self.all_products = []
                 self.db_checks = []
                 self.pending_checks = []
+                self.product_notes = {}
                 return
             self.all_products = [
                 {
@@ -193,6 +200,19 @@ class SeguimientoState(rx.State):
                 self.db_checks = [f"{r['producto_id']}_{r['hito']}" for r in seg_data]
             else:
                 self.db_checks = []
+            notes_data = fetch_all_paginated(
+                supabase.table("seguimiento")
+                .select("producto_id, observaciones")
+                .in_("producto_id", prod_ids)
+                .not_.is_("observaciones", "null")
+            )
+            notes_map = {}
+            for r in notes_data:
+                pid = str(r["producto_id"])
+                obs = r.get("observaciones", "")
+                if obs and obs.strip() and (pid not in notes_map):
+                    notes_map[pid] = obs.strip()
+            self.product_notes = notes_map
             self.pending_checks = []
         except Exception as e:
             logging.exception(f"Error loading products/seguimiento: {e}")
@@ -320,8 +340,14 @@ class SeguimientoState(rx.State):
                 supabase.table("seguimiento").upsert(
                     lote, on_conflict="producto_id, hito"
                 ).execute()
-                if self.selected_project_codigo:
-                    sincronizar_avances_estructural(self.selected_project_codigo)
+            for pid_str, note_text in self.product_notes.items():
+                if note_text.strip():
+                    pid_int = int(pid_str)
+                    supabase.table("seguimiento").update(
+                        {"observaciones": note_text}
+                    ).eq("producto_id", pid_int).execute()
+            if self.selected_project_codigo:
+                sincronizar_avances_estructural(self.selected_project_codigo)
             self.pending_checks = []
         except Exception as e:
             logging.exception(f"Error saving avances: {e}")

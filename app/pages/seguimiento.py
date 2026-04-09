@@ -62,10 +62,6 @@ def product_row(product: SeguimientoProduct) -> rx.Component:
             product["ml"].to_string(),
             class_name="px-4 py-3 text-sm text-gray-600 border-b border-gray-100 whitespace-nowrap text-right",
         ),
-        rx.el.td(
-            product["ctd"].to_string(),
-            class_name="px-4 py-3 text-sm text-gray-600 border-b border-gray-100 whitespace-nowrap text-center",
-        ),
         milestone_cell(product, 0, "Diseñado"),
         milestone_cell(product, 1, "Fabricado"),
         milestone_cell(product, 2, "Material en Obra"),
@@ -74,6 +70,19 @@ def product_row(product: SeguimientoProduct) -> rx.Component:
         milestone_cell(product, 5, "Instalación de Puertas o Frentes"),
         milestone_cell(product, 6, "Revisión y Observaciones"),
         milestone_cell(product, 7, "Entrega"),
+        rx.el.td(
+            rx.el.input(
+                default_value=SeguimientoState.product_notes.get(
+                    product["id"].to_string(), ""
+                ),
+                on_change=lambda val: SeguimientoState.set_product_note(
+                    product["id"].to_string(), val
+                ),
+                placeholder="...",
+                class_name="w-24 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-transparent",
+            ),
+            class_name="px-2 py-2 border-b border-gray-100",
+        ),
         class_name="hover:bg-gray-50 transition-colors",
     )
 
@@ -504,10 +513,6 @@ def seguimiento_content() -> rx.Component:
                                     class_name="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 whitespace-nowrap",
                                 ),
                                 rx.el.th(
-                                    "Ctd",
-                                    class_name="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200 whitespace-nowrap",
-                                ),
-                                rx.el.th(
                                     "🗺️",
                                     class_name="px-4 py-3 text-center text-lg bg-gray-50 border-b border-gray-200",
                                 ),
@@ -537,6 +542,10 @@ def seguimiento_content() -> rx.Component:
                                 ),
                                 rx.el.th(
                                     "👍",
+                                    class_name="px-4 py-3 text-center text-lg bg-gray-50 border-b border-gray-200",
+                                ),
+                                rx.el.th(
+                                    "📝",
                                     class_name="px-4 py-3 text-center text-lg bg-gray-50 border-b border-gray-200",
                                 ),
                             )
