@@ -205,18 +205,25 @@ class SeguimientoState(rx.State):
         return prods
 
     @rx.event
-    def toggle_check(self, product_id: str, hito_idx: int):
+    async def toggle_check(self, product_id: str, hito_idx: int):
+        login_state = await self.get_state(LoginState)
+        self.current_user_role = login_state.user_role
         hito_name = self.milestone_names[int(hito_idx)]
         check_key = f"{product_id}_{hito_name}"
+        is_jefe = self.current_user_role.lower() in [
+            "admin",
+            "administrador",
+            "gerente",
+        ]
         if check_key in self.db_checks:
-            if self.is_jefe:
+            if is_jefe:
                 if check_key in self.delete_pending:
                     self.delete_pending.remove(check_key)
                 else:
                     self.delete_pending.append(check_key)
             return
         if check_key in self.pending_checks:
-            if self.is_jefe:
+            if is_jefe:
                 for i in range(int(hito_idx), len(self.milestone_names)):
                     h_name = self.milestone_names[i]
                     c_key = f"{product_id}_{h_name}"
@@ -230,8 +237,17 @@ class SeguimientoState(rx.State):
                 self.pending_checks.append(c_key)
 
     @rx.event
-    def borrar_avance(self):
+    async def borrar_avance(self):
         if not self.delete_pending:
+            return
+        login_state = await self.get_state(LoginState)
+        self.current_user_role = login_state.user_role
+        is_jefe = self.current_user_role.lower() in [
+            "admin",
+            "administrador",
+            "gerente",
+        ]
+        if not is_jefe:
             return
         try:
             supabase = conectar()
@@ -251,6 +267,7 @@ class SeguimientoState(rx.State):
                 sincronizar_avances_estructural(self.selected_project_codigo)
         except Exception as e:
             logging.exception(f"Error deleting avances: {e}")
+            return rx.window_alert(f"Error al borrar avance: {str(e)}")
 
     @rx.event
     async def guardar_avance(self):
