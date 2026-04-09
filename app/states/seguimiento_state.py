@@ -35,6 +35,8 @@ class SeguimientoState(rx.State):
     all_products: list[SeguimientoProduct] = []
     db_checks: list[str] = []
     pending_checks: list[str] = []
+    delete_pending: list[str] = []
+    current_user_role: str = ""
     milestone_names: list[str] = [
         "Diseñado",
         "Fabricado",
@@ -56,6 +58,14 @@ class SeguimientoState(rx.State):
         "Entrega": 5,
     }
 
+    @rx.var
+    def is_jefe(self) -> bool:
+        return self.current_user_role.lower() in ["admin", "administrador", "gerente"]
+
+    @rx.var
+    def is_supervisor_only(self) -> bool:
+        return not self.is_jefe
+
     @rx.event
     def set_search_text(self, val: str):
         self.search_text = val
@@ -74,8 +84,10 @@ class SeguimientoState(rx.State):
         self.group_by = val
 
     @rx.event
-    def load_projects_list(self):
+    async def load_projects_list(self):
         try:
+            login_state = await self.get_state(LoginState)
+            self.current_user_role = login_state.user_role
             supabase = conectar()
             if not supabase:
                 return
@@ -115,13 +127,16 @@ class SeguimientoState(rx.State):
         yield SeguimientoState.load_products_and_seguimiento
 
     @rx.event
-    def load_products_and_seguimiento(self):
+    async def load_products_and_seguimiento(self):
         if not self.selected_project_id:
             self.all_products = []
             self.db_checks = []
             self.pending_checks = []
+            self.delete_pending = []
             return
         try:
+            login_state = await self.get_state(LoginState)
+            self.current_user_role = login_state.user_role
             supabase = conectar()
             if not supabase:
                 return
@@ -194,15 +209,48 @@ class SeguimientoState(rx.State):
         hito_name = self.milestone_names[int(hito_idx)]
         check_key = f"{product_id}_{hito_name}"
         if check_key in self.db_checks:
+            if self.is_jefe:
+                if check_key in self.delete_pending:
+                    self.delete_pending.remove(check_key)
+                else:
+                    self.delete_pending.append(check_key)
             return
         if check_key in self.pending_checks:
-            self.pending_checks.remove(check_key)
-        else:
-            for i in range(int(hito_idx) + 1):
-                h_name = self.milestone_names[i]
-                c_key = f"{product_id}_{h_name}"
-                if c_key not in self.db_checks and c_key not in self.pending_checks:
-                    self.pending_checks.append(c_key)
+            if self.is_jefe:
+                for i in range(int(hito_idx), len(self.milestone_names)):
+                    h_name = self.milestone_names[i]
+                    c_key = f"{product_id}_{h_name}"
+                    if c_key in self.pending_checks:
+                        self.pending_checks.remove(c_key)
+            return
+        for i in range(int(hito_idx) + 1):
+            h_name = self.milestone_names[i]
+            c_key = f"{product_id}_{h_name}"
+            if c_key not in self.db_checks and c_key not in self.pending_checks:
+                self.pending_checks.append(c_key)
+
+    @rx.event
+    def borrar_avance(self):
+        if not self.delete_pending:
+            return
+        try:
+            supabase = conectar()
+            if not supabase:
+                return
+            for c_key in self.delete_pending:
+                parts = c_key.split("_", 1)
+                pid = int(parts[0])
+                hito = parts[1]
+                supabase.table("seguimiento").delete().eq("producto_id", pid).eq(
+                    "hito", hito
+                ).execute()
+                if c_key in self.db_checks:
+                    self.db_checks.remove(c_key)
+            self.delete_pending = []
+            if self.selected_project_codigo:
+                sincronizar_avances_estructural(self.selected_project_codigo)
+        except Exception as e:
+            logging.exception(f"Error deleting avances: {e}")
 
     @rx.event
     async def guardar_avance(self):
@@ -239,6 +287,7 @@ class SeguimientoState(rx.State):
     @rx.event
     def limpiar_marcacion(self):
         self.pending_checks = []
+        self.delete_pending = []
 
     @rx.event
     def borrar_avances(self, product_id: str, hito_idx: int):

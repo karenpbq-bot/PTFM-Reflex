@@ -11,20 +11,32 @@ def milestone_cell(
     return rx.el.td(
         rx.el.button(
             rx.cond(
-                SeguimientoState.db_checks.contains(check_key),
-                rx.icon("check", class_name="h-4 w-4 text-white"),
-                None,
+                SeguimientoState.delete_pending.contains(check_key),
+                rx.icon("x", class_name="h-4 w-4 text-white"),
+                rx.cond(
+                    SeguimientoState.db_checks.contains(check_key),
+                    rx.icon("check", class_name="h-4 w-4 text-white"),
+                    rx.cond(
+                        SeguimientoState.pending_checks.contains(check_key),
+                        rx.icon("check", class_name="h-4 w-4 text-white"),
+                        None,
+                    ),
+                ),
             ),
             on_click=lambda: SeguimientoState.toggle_check(
                 product["id"].to_string(), idx
             ),
             class_name=rx.cond(
-                SeguimientoState.db_checks.contains(check_key),
-                "h-8 w-8 rounded-lg bg-gray-400 flex items-center justify-center transition-all hover:bg-gray-500 shadow-sm",
+                SeguimientoState.delete_pending.contains(check_key),
+                "h-8 w-8 rounded-lg bg-yellow-500 flex items-center justify-center transition-all hover:bg-yellow-600 shadow-sm",
                 rx.cond(
-                    SeguimientoState.pending_checks.contains(check_key),
-                    "h-8 w-8 rounded-lg bg-red-500 flex items-center justify-center transition-all hover:bg-red-600 shadow-sm animate-pulse",
-                    "h-6 w-6 rounded-lg bg-red-500/50 flex items-center justify-center transition-all hover:bg-red-500 shadow-sm mx-auto",
+                    SeguimientoState.db_checks.contains(check_key),
+                    "h-8 w-8 rounded-lg bg-gray-400 flex items-center justify-center transition-all hover:bg-gray-500 shadow-sm",
+                    rx.cond(
+                        SeguimientoState.pending_checks.contains(check_key),
+                        "h-8 w-8 rounded-lg bg-red-500 flex items-center justify-center transition-all hover:bg-red-600 shadow-sm animate-pulse",
+                        "h-6 w-6 rounded-lg bg-red-500/50 flex items-center justify-center transition-all hover:bg-red-500 shadow-sm mx-auto",
+                    ),
                 ),
             ),
         ),
@@ -173,6 +185,14 @@ def seguimiento_content() -> rx.Component:
                             "Limpiar Marcación",
                             on_click=SeguimientoState.limpiar_marcacion,
                             class_name="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors",
+                        ),
+                        rx.cond(
+                            SeguimientoState.is_jefe,
+                            rx.el.button(
+                                "Borrar Avance",
+                                on_click=SeguimientoState.borrar_avance,
+                                class_name="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors",
+                            ),
                         ),
                         rx.el.button(
                             "Exportar Excel",
