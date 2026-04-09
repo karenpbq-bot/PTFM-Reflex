@@ -81,97 +81,376 @@ def product_row(product: SeguimientoProduct) -> rx.Component:
 def seguimiento_content() -> rx.Component:
     return rx.el.div(
         rx.el.div(
-            rx.el.h3(
-                "Selección de Proyecto",
-                class_name="text-lg font-bold text-gray-800 mb-4",
-            ),
-            rx.el.div(
-                rx.el.input(
-                    placeholder="Buscar proyecto...",
-                    on_change=SeguimientoState.set_search_text.debounce(500),
-                    class_name="w-full md:w-1/3 px-4 py-2 border border-gray-200 rounded-lg",
-                ),
+            rx.el.button(
                 rx.el.div(
-                    rx.el.select(
-                        rx.el.option("-- Seleccione un Proyecto --", value=""),
-                        rx.foreach(
-                            SeguimientoState.projects_list,
-                            lambda p: rx.el.option(p["label"], value=p["id"]),
-                        ),
-                        value=SeguimientoState.selected_project_id,
-                        on_change=SeguimientoState.select_project,
-                        class_name="appearance-none w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white",
+                    rx.icon("folder-search", class_name="h-5 w-5 text-blue-600"),
+                    rx.el.span(
+                        "Selección de Proyecto",
+                        class_name="text-lg font-bold text-gray-800",
                     ),
-                    rx.icon(
-                        "chevron-down",
-                        class_name="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none",
-                    ),
-                    class_name="relative w-full md:w-2/3",
+                    class_name="flex items-center gap-2",
                 ),
-                class_name="flex flex-col md:flex-row gap-4",
+                rx.icon(
+                    rx.cond(
+                        SeguimientoState.show_project_selector,
+                        "chevron-up",
+                        "chevron-down",
+                    ),
+                    class_name="h-5 w-5 text-gray-400",
+                ),
+                on_click=SeguimientoState.toggle_project_selector,
+                class_name="flex items-center justify-between w-full p-4 hover:bg-gray-50 rounded-t-2xl transition-colors",
             ),
-            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
+            rx.cond(
+                SeguimientoState.show_project_selector,
+                rx.el.div(
+                    rx.el.div(
+                        rx.el.input(
+                            placeholder="Buscar proyecto...",
+                            on_change=SeguimientoState.set_search_text.debounce(500),
+                            class_name="w-full md:w-1/3 px-4 py-2 border border-gray-200 rounded-lg",
+                        ),
+                        rx.el.div(
+                            rx.el.select(
+                                rx.el.option("-- Seleccione un Proyecto --", value=""),
+                                rx.foreach(
+                                    SeguimientoState.projects_list,
+                                    lambda p: rx.el.option(p["label"], value=p["id"]),
+                                ),
+                                value=SeguimientoState.selected_project_id,
+                                on_change=SeguimientoState.select_project,
+                                class_name="appearance-none w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white",
+                            ),
+                            rx.icon(
+                                "chevron-down",
+                                class_name="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none",
+                            ),
+                            class_name="relative w-full md:w-2/3",
+                        ),
+                        class_name="flex flex-col md:flex-row gap-4",
+                    ),
+                    class_name="px-4 pb-4",
+                ),
+            ),
+            class_name="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6",
+        ),
+        rx.el.div(
+            rx.el.button(
+                rx.el.div(
+                    rx.icon("settings", class_name="h-5 w-5 text-gray-600"),
+                    rx.el.span(
+                        "Configuraciones Avanzadas",
+                        class_name="text-lg font-bold text-gray-800",
+                    ),
+                    class_name="flex items-center gap-2",
+                ),
+                rx.icon(
+                    rx.cond(
+                        SeguimientoState.show_advanced_config,
+                        "chevron-up",
+                        "chevron-down",
+                    ),
+                    class_name="h-5 w-5 text-gray-400",
+                ),
+                on_click=SeguimientoState.toggle_advanced_config,
+                class_name="flex items-center justify-between w-full p-4 hover:bg-gray-50 rounded-t-2xl transition-colors",
+            ),
+            rx.cond(
+                SeguimientoState.show_advanced_config,
+                rx.el.div(
+                    rx.radix.tabs.root(
+                        rx.radix.tabs.list(
+                            rx.radix.tabs.trigger(
+                                "🔍 Filtros",
+                                value="filtros",
+                                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+                            ),
+                            rx.radix.tabs.trigger(
+                                "⚖️ Ponderación",
+                                value="ponderacion",
+                                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+                            ),
+                            rx.radix.tabs.trigger(
+                                "📥 Importación",
+                                value="importacion",
+                                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+                            ),
+                            class_name="flex gap-2 border-b border-gray-200 mb-4",
+                        ),
+                        rx.radix.tabs.content(
+                            rx.el.div(
+                                rx.el.div(
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "Agrupar por:",
+                                            class_name="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1",
+                                        ),
+                                        rx.el.div(
+                                            rx.el.select(
+                                                rx.el.option("Sin grupo", value="none"),
+                                                rx.el.option(
+                                                    "Ubicación", value="ubicacion"
+                                                ),
+                                                rx.el.option("Tipo", value="tipo"),
+                                                rx.el.option(
+                                                    "Sin avance", value="sin_avance"
+                                                ),
+                                                on_change=SeguimientoState.set_group_by,
+                                                value=SeguimientoState.group_by,
+                                                class_name="appearance-none w-full px-4 py-2 border border-gray-200 rounded-lg bg-white",
+                                            ),
+                                            rx.icon(
+                                                "chevron-down",
+                                                class_name="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none",
+                                            ),
+                                            class_name="relative",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "Búsqueda Principal:",
+                                            class_name="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1",
+                                        ),
+                                        rx.el.input(
+                                            placeholder="Código, ubicación o tipo...",
+                                            on_change=SeguimientoState.set_primary_filter.debounce(
+                                                500
+                                            ),
+                                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "Refinar Búsqueda:",
+                                            class_name="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1",
+                                        ),
+                                        rx.el.input(
+                                            placeholder="Segundo filtro...",
+                                            on_change=SeguimientoState.set_refinement_filter.debounce(
+                                                500
+                                            ),
+                                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg",
+                                        ),
+                                    ),
+                                    class_name="grid grid-cols-1 md:grid-cols-3 gap-4",
+                                )
+                            ),
+                            value="filtros",
+                            class_name="outline-none",
+                        ),
+                        rx.radix.tabs.content(
+                            rx.el.div(
+                                rx.el.p(
+                                    "Asigne el peso porcentual de cada hito para el cálculo del avance. La suma debe ser 100%.",
+                                    class_name="text-sm text-gray-500 mb-4",
+                                ),
+                                rx.el.div(
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "🗺️ Diseñado",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="15",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Diseñado", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "🪚 Fabricado",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="40",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Fabricado", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "🚛 Material en Obra",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="5",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Material en Obra", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "📍 Material en Ubicación",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="5",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Material en Ubicación", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "📦 Inst. Estructura",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="15",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Instalación de Estructura", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "🗄️ Inst. Puertas",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="10",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Instalación de Puertas o Frentes", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "🔍 Revisión",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="5",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Revisión y Observaciones", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    rx.el.div(
+                                        rx.el.label(
+                                            "👍 Entrega",
+                                            class_name="block text-xs font-bold text-gray-600 mb-1",
+                                        ),
+                                        rx.el.input(
+                                            type="number",
+                                            default_value="5",
+                                            on_change=lambda v: SeguimientoState.set_milestone_weight(
+                                                "Entrega", v
+                                            ),
+                                            min="0",
+                                            max="100",
+                                            class_name="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-center",
+                                        ),
+                                    ),
+                                    class_name="grid grid-cols-2 md:grid-cols-4 gap-4",
+                                ),
+                            ),
+                            value="ponderacion",
+                            class_name="outline-none",
+                        ),
+                        rx.radix.tabs.content(
+                            rx.el.div(
+                                rx.el.p(
+                                    "Sube un archivo Excel (.xlsx) con la misma estructura que el archivo exportado. Solo se actualizarán las casillas vacías; los datos existentes se conservan.",
+                                    class_name="text-sm text-gray-500 mb-4",
+                                ),
+                                rx.upload.root(
+                                    rx.el.div(
+                                        rx.icon(
+                                            "cloud_upload",
+                                            class_name="h-8 w-8 text-gray-400 mb-2",
+                                        ),
+                                        rx.el.p(
+                                            "Arrastra o haz clic para subir archivo .xlsx",
+                                            class_name="text-sm font-semibold text-gray-600",
+                                        ),
+                                        rx.el.p(
+                                            "Solo se actualizan casillas vacías",
+                                            class_name="text-xs text-gray-400 mt-1",
+                                        ),
+                                        class_name="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-colors cursor-pointer",
+                                    ),
+                                    id="import_seguimiento",
+                                    accept={
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+                                            ".xlsx"
+                                        ],
+                                        "application/vnd.ms-excel": [".xls"],
+                                    },
+                                    on_drop=SeguimientoState.handle_import_seguimiento,
+                                    max_files=1,
+                                ),
+                            ),
+                            value="importacion",
+                            class_name="outline-none",
+                        ),
+                        default_value="filtros",
+                    ),
+                    class_name="px-4 pb-4",
+                ),
+            ),
+            class_name="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6",
         ),
         rx.cond(
             SeguimientoState.selected_project_id != "",
             rx.el.div(
                 rx.el.div(
                     rx.el.div(
-                        rx.el.p(
+                        rx.el.span(
                             "Avance Total",
-                            class_name="text-sm text-gray-500 font-bold uppercase",
+                            class_name="text-xs text-gray-500 font-bold uppercase",
                         ),
-                        rx.el.p(
+                        rx.el.span(
                             f"{SeguimientoState.avance_total}%",
-                            class_name="text-3xl font-black text-blue-600 mt-1",
+                            class_name="text-lg font-black text-blue-600 ml-2",
                         ),
-                        class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm flex-1",
+                        class_name="flex items-center gap-1 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm",
                     ),
                     rx.el.div(
-                        rx.el.p(
-                            "Avance de Selección",
-                            class_name="text-sm text-gray-500 font-bold uppercase",
+                        rx.el.span(
+                            "Avance Selección",
+                            class_name="text-xs text-gray-500 font-bold uppercase",
                         ),
-                        rx.el.p(
+                        rx.el.span(
                             f"{SeguimientoState.avance_seleccion}%",
-                            class_name="text-3xl font-black text-green-600 mt-1",
+                            class_name="text-lg font-black text-green-600 ml-2",
                         ),
-                        class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm flex-1",
+                        class_name="flex items-center gap-1 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm",
                     ),
-                    class_name="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6",
+                    class_name="flex flex-wrap gap-3 mb-4",
                 ),
                 rx.el.div(
-                    rx.el.div(
-                        rx.el.div(
-                            rx.el.select(
-                                rx.el.option("Sin grupo", value="none"),
-                                rx.el.option("Ubicación", value="ubicacion"),
-                                rx.el.option("Tipo", value="tipo"),
-                                rx.el.option("Sin avance", value="sin_avance"),
-                                on_change=SeguimientoState.set_group_by,
-                                value=SeguimientoState.group_by,
-                                class_name="appearance-none w-full px-4 py-2 border border-gray-200 rounded-lg bg-white",
-                            ),
-                            rx.icon(
-                                "chevron-down",
-                                class_name="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none",
-                            ),
-                            class_name="relative flex-1",
-                        ),
-                        rx.el.input(
-                            placeholder="Búsqueda Principal...",
-                            on_change=SeguimientoState.set_primary_filter.debounce(500),
-                            class_name="flex-1 px-4 py-2 border border-gray-200 rounded-lg",
-                        ),
-                        rx.el.input(
-                            placeholder="Refinar Búsqueda...",
-                            on_change=SeguimientoState.set_refinement_filter.debounce(
-                                500
-                            ),
-                            class_name="flex-1 px-4 py-2 border border-gray-200 rounded-lg",
-                        ),
-                        class_name="flex flex-col md:flex-row gap-4 mb-6",
-                    ),
                     rx.el.div(
                         rx.el.button(
                             "Guardar Marcación",
@@ -195,36 +474,14 @@ def seguimiento_content() -> rx.Component:
                                 class_name="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors",
                             ),
                         ),
-                        rx.el.div(
-                            rx.upload.root(
-                                rx.el.div(
-                                    rx.icon("upload", class_name="h-4 w-4 mr-2"),
-                                    rx.el.span(
-                                        "Importar Avance",
-                                        class_name="text-sm font-bold",
-                                    ),
-                                    class_name="flex items-center justify-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors cursor-pointer",
-                                ),
-                                id="import_seguimiento",
-                                accept={
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-                                        ".xlsx"
-                                    ],
-                                    "application/vnd.ms-excel": [".xls"],
-                                },
-                                on_drop=SeguimientoState.handle_import_seguimiento,
-                                max_files=1,
-                            ),
-                            class_name="inline-block",
-                        ),
                         rx.el.button(
                             "Exportar Avance",
                             on_click=SeguimientoState.export_seguimiento,
                             class_name="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors",
                         ),
-                        class_name="flex flex-wrap gap-4",
+                        class_name="flex flex-wrap gap-3",
                     ),
-                    class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
+                    class_name="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm mb-6",
                 ),
                 rx.el.div(
                     rx.el.table(

@@ -41,6 +41,8 @@ class SeguimientoState(rx.State):
     pending_checks: list[str] = []
     delete_pending: list[str] = []
     current_user_role: str = ""
+    show_project_selector: bool = True
+    show_advanced_config: bool = False
     milestone_names: list[str] = [
         "Diseñado",
         "Fabricado",
@@ -86,6 +88,21 @@ class SeguimientoState(rx.State):
     @rx.event
     def set_group_by(self, val: str):
         self.group_by = val
+
+    @rx.event
+    def toggle_project_selector(self):
+        self.show_project_selector = not self.show_project_selector
+
+    @rx.event
+    def toggle_advanced_config(self):
+        self.show_advanced_config = not self.show_advanced_config
+
+    @rx.event
+    def set_milestone_weight(self, hito: str, value: str):
+        try:
+            self.milestone_weights[hito] = float(value)
+        except:
+            logging.exception("Unexpected error")
 
     @rx.event
     async def load_projects_list(self):
