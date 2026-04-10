@@ -3,16 +3,28 @@ from app.components.navigation import layout
 from app.states.metricas_state import MetricasState
 
 
-def kpi_card(label: str, value: str, trend: str, icon: str) -> rx.Component:
+def kpi_card(label: str, value: str, icon: str) -> rx.Component:
     return rx.el.div(
         rx.el.div(
             rx.el.p(label, class_name="text-sm text-gray-500 font-medium"),
             rx.el.p(value, class_name="text-3xl font-bold text-gray-900 mt-1"),
-            rx.el.p(trend, class_name="text-xs text-green-500 font-bold mt-2"),
             class_name="flex-1",
         ),
         rx.icon(icon, class_name="h-8 w-8 text-blue-100"),
         class_name="flex items-start p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
+    )
+
+
+def project_checkbox(proj: dict) -> rx.Component:
+    return rx.el.label(
+        rx.el.input(
+            type="checkbox",
+            checked=MetricasState.selected_projects.contains(proj["id"]),
+            on_change=lambda _: MetricasState.toggle_project(proj["id"]),
+            class_name="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4",
+        ),
+        rx.el.span(proj["display"], class_name="ml-2 text-sm text-gray-700"),
+        class_name="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors",
     )
 
 
@@ -128,35 +140,35 @@ def milestone_row(item: dict) -> rx.Component:
             class_name="px-4 py-3 text-sm font-semibold text-gray-900 border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Diseñado']}%",
+            item["Diseñado"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Fabricado']}%",
+            item["Fabricado"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Material en Obra']}%",
+            item["Material en Obra"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Material en Ubicación']}%",
+            item["Material en Ubicación"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Instalación de Estructura']}%",
+            item["Instalación de Estructura"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Instalación de Puertas o Frentes']}%",
+            item["Instalación de Puertas o Frentes"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Revisión y Observaciones']}%",
+            item["Revisión y Observaciones"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         rx.el.td(
-            f"{item['Entrega']}%",
+            item["Entrega"],
             class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
         ),
         class_name="hover:bg-gray-50",
@@ -174,27 +186,56 @@ def metricas_page() -> rx.Component:
                 rx.el.div(
                     rx.el.div(
                         rx.el.input(
-                            placeholder="Filtrar por código o nombre...",
+                            placeholder="Filtrar proyectos...",
                             on_change=MetricasState.set_search_text.debounce(500),
-                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg",
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm",
                         ),
-                        rx.el.button(
-                            "Aplicar Filtro",
-                            on_click=MetricasState.load_metricas,
-                            class_name="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors",
+                        rx.el.select(
+                            rx.el.option("Todos los supervisores", value=""),
+                            rx.foreach(
+                                MetricasState.supervisores_list,
+                                lambda s: rx.el.option(s["nombre"], value=s["id"]),
+                            ),
+                            on_change=MetricasState.set_filter_responsible,
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none text-sm",
                         ),
-                        class_name="flex gap-3 mb-4",
+                        class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4",
                     ),
                     rx.el.div(
-                        rx.el.select(
-                            rx.foreach(
-                                MetricasState.projects_list,
-                                lambda p: rx.el.option(p["display"], value=p["id"]),
+                        rx.el.div(
+                            rx.el.button(
+                                "Seleccionar Todos",
+                                on_click=MetricasState.select_all_projects,
+                                class_name="text-sm text-blue-600 hover:text-blue-800 font-medium",
                             ),
-                            on_change=MetricasState.set_selected_projects,
-                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none",
+                            rx.el.span("|", class_name="mx-2 text-gray-300"),
+                            rx.el.button(
+                                "Deseleccionar",
+                                on_click=MetricasState.deselect_all_projects,
+                                class_name="text-sm text-gray-500 hover:text-gray-700 font-medium",
+                            ),
+                            class_name="flex items-center",
                         ),
-                        class_name="w-full",
+                        rx.el.label(
+                            rx.el.input(
+                                type="checkbox",
+                                checked=MetricasState.show_planned_bars,
+                                on_change=MetricasState.toggle_planned_bars,
+                                class_name="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
+                            ),
+                            rx.el.span(
+                                "Mostrar Planificado (Celeste)",
+                                class_name="text-sm font-medium text-gray-700",
+                            ),
+                            class_name="flex items-center cursor-pointer",
+                        ),
+                        class_name="flex justify-between items-center mb-2",
+                    ),
+                    rx.el.div(
+                        rx.foreach(
+                            MetricasState.filtered_projects_list, project_checkbox
+                        ),
+                        class_name="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50/50",
                     ),
                     class_name="flex flex-col",
                 ),
@@ -204,66 +245,70 @@ def metricas_page() -> rx.Component:
                 kpi_card(
                     "Presupuesto (Uso Estimado)",
                     MetricasState.budget_utilization,
-                    "+2.5% vs mes ant",
                     "banknote",
                 ),
                 kpi_card(
                     "Cronograma (Adherencia)",
                     MetricasState.timeline_adherence,
-                    "+1.2% estable",
                     "calendar-check",
                 ),
                 kpi_card(
-                    "Recursos (Asignación)",
-                    MetricasState.resource_allocation,
-                    "Óptimo",
-                    "users",
+                    "Recursos (Asignación)", MetricasState.resource_allocation, "users"
                 ),
                 class_name="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8",
             ),
             rx.el.div(
                 rx.el.div(
-                    rx.el.h3(
-                        "Cronograma de Proyectos", class_name="text-lg font-bold mb-6"
+                    rx.el.div(
+                        rx.el.h3(
+                            "Gantt Comparativo de Doble Capa",
+                            class_name="text-lg font-bold",
+                        ),
+                        rx.el.div(
+                            rx.el.div(
+                                rx.el.div(
+                                    class_name="w-3 h-3 rounded-full bg-[#87CEEB] mr-1"
+                                ),
+                                rx.el.span(
+                                    "Planificado", class_name="text-xs text-gray-500"
+                                ),
+                                class_name="flex items-center mr-3",
+                            ),
+                            rx.el.div(
+                                rx.el.div(
+                                    class_name="w-3 h-3 rounded-full bg-[#22c55e] mr-1"
+                                ),
+                                rx.el.span(">75%", class_name="text-xs text-gray-500"),
+                                class_name="flex items-center mr-3",
+                            ),
+                            rx.el.div(
+                                rx.el.div(
+                                    class_name="w-3 h-3 rounded-full bg-[#f59e0b] mr-1"
+                                ),
+                                rx.el.span(
+                                    "50-75%", class_name="text-xs text-gray-500"
+                                ),
+                                class_name="flex items-center mr-3",
+                            ),
+                            rx.el.div(
+                                rx.el.div(
+                                    class_name="w-3 h-3 rounded-full bg-[#ef4444] mr-1"
+                                ),
+                                rx.el.span("<50%", class_name="text-xs text-gray-500"),
+                                class_name="flex items-center",
+                            ),
+                            class_name="flex items-center",
+                        ),
+                        class_name="flex justify-between items-center mb-6",
                     ),
-                    rx.recharts.bar_chart(
-                        rx.recharts.cartesian_grid(
-                            stroke_dasharray="3 3", horizontal=True, vertical=False
-                        ),
-                        rx.recharts.x_axis(
-                            data_key="name", type_="category", tick_size=10
-                        ),
-                        rx.recharts.y_axis(type_="number", domain=[0, 100]),
-                        rx.recharts.tooltip(),
-                        rx.recharts.bar(
-                            data_key="progress_green",
-                            stack_id="a",
-                            fill="#10b981",
-                            name="> 75%",
-                        ),
-                        rx.recharts.bar(
-                            data_key="progress_yellow",
-                            stack_id="a",
-                            fill="#f59e0b",
-                            name="50-75%",
-                        ),
-                        rx.recharts.bar(
-                            data_key="progress_red",
-                            stack_id="a",
-                            fill="#ef4444",
-                            name="< 50%",
-                        ),
-                        data=MetricasState.gantt_data,
-                        width="100%",
-                        height=350,
-                    ),
-                    class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-2",
+                    rx.html(MetricasState.gantt_html),
+                    class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-2 min-h-[400px]",
                 ),
                 rx.el.div(
                     rx.el.h3("Salud de Gestión", class_name="text-lg font-bold mb-6"),
                     rx.el.div(
                         rx.foreach(MetricasState.health_indicators, health_card),
-                        class_name="flex flex-col gap-3",
+                        class_name="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2",
                     ),
                     class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
                 ),
@@ -391,25 +436,6 @@ def metricas_page() -> rx.Component:
                     class_name="grid grid-cols-1 md:grid-cols-3 gap-4",
                 ),
                 class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-8",
-            ),
-            rx.el.div(
-                rx.el.h3("Progreso Mensual", class_name="text-lg font-bold mb-6"),
-                rx.recharts.bar_chart(
-                    rx.recharts.cartesian_grid(stroke_dasharray="3 3", vertical=False),
-                    rx.recharts.x_axis(data_key="month"),
-                    rx.recharts.y_axis(),
-                    rx.recharts.tooltip(),
-                    rx.recharts.bar(
-                        data_key="completados", fill="#10b981", radius=[4, 4, 0, 0]
-                    ),
-                    rx.recharts.bar(
-                        data_key="pendientes", fill="#f59e0b", radius=[4, 4, 0, 0]
-                    ),
-                    data=MetricasState.monthly_progress,
-                    width="100%",
-                    height=300,
-                ),
-                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
             ),
             class_name="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700",
         ),

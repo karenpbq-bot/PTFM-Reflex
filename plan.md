@@ -1,14 +1,20 @@
-# PTFM-Reflex - Login Fix + Mejoras Seguimiento
+# PTFM-Reflex - Reconstrucción Módulo Métricas
 
-## Phase 1-5: Anteriores ✅
-- [x] All previous phases completed
+## Phase 1-6: Anteriores ✅
+- [x] All previous phases completed (Login fix, base app)
 
-## Phase 6: Fix Login (case-insensitive) + Mejoras UX Login ✅
-- [x] Hacer el login case-insensitive para nombre_usuario (usar ilike en vez de eq)
-- [x] Mantener la contraseña case-sensitive (comparación exacta en Python)
-- [x] Agregar feedback visual mejorado en el formulario de login
-- [x] Asegurar que las variables SUPABASE_URL y SUPABASE_KEY estén configuradas
+## Phase 7: Reconstrucción Módulo Métricas - State & Data Layer ✅
+- [x] Rebuild MetricasState with full data loading: projects list, planned dates from proyectos table, actual progress from seguimiento table
+- [x] Implement dual-layer Gantt data computation: planned bars (from project stage dates) + actual bars (from seguimiento milestone counts with semaforo color logic)
+- [x] Implement KPI calculations: milestone counts per project, average progress per stage, summary tables
+- [x] Implement export functions: Resumen Etapas CSV, Detalle Hitos CSV, Auditoría 0/1 binary matrix Excel
+- [x] Add 23-hour patch logic for same-day start/end dates in Gantt bars
 
-## Phase 7: Mejoras Módulo Seguimiento - Parte 1
-- [ ] Recopilar feedback del usuario sobre qué mejoras específicas necesita en Seguimiento
-- [ ] Implementar mejoras identificadas al módulo de Seguimiento
+## Phase 8: Reconstrucción Módulo Métricas - UI & Visualization ✅
+- [x] Build project selection panel with multi-project support and filters (by responsible, search)
+- [x] Build dual-layer Gantt chart using Plotly (planned celeste bars + actual semaforo overlay bars)
+- [x] Build KPI summary cards (budget, timeline, resources) with real computed data
+- [x] Build Resumen de Etapas table with progress bars per stage
+- [x] Build Detalle de Hitos table with milestone counts per project
+- [x] Build Export Center with 3 download buttons (Resumen CSV, Detalle CSV, Auditoría 0/1)
+- [x] Add toggle to show/hide planned (celeste) bars, filter by responsible

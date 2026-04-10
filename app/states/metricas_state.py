@@ -1,63 +1,140 @@
 import reflex as rx
-from app.services.base_datos import obtener_proyectos, conectar, fetch_all_paginated
+from app.services.base_datos import conectar, fetch_all_paginated
 import logging
 from typing import Any
 import pandas as pd
+from datetime import datetime, timedelta
+import plotly.graph_objects as go
+import io
+
+STAGE_MAPPING = {
+    "Diseño": ["Diseñado"],
+    "Fabricación": ["Fabricado"],
+    "Traslado": ["Material en Obra", "Material en Ubicación"],
+    "Instalación": ["Instalación de Estructura", "Instalación de Puertas o Frentes"],
+    "Entrega": ["Revisión y Observaciones", "Entrega"],
+}
+MILESTONES = [
+    "Diseñado",
+    "Fabricado",
+    "Material en Obra",
+    "Material en Ubicación",
+    "Instalación de Estructura",
+    "Instalación de Puertas o Frentes",
+    "Revisión y Observaciones",
+    "Entrega",
+]
 
 
 class MetricasState(rx.State):
     search_text: str = ""
+    filter_responsible: str = ""
+    show_planned_bars: bool = True
     selected_projects: list[str] = []
-    projects_list: list[dict[str, str]] = []
-    gantt_data: list[dict[str, str | int | float | bool]] = []
-    health_indicators: list[dict[str, str]] = []
-    stage_progress: list[dict[str, str | int | float | bool]] = []
-    milestone_detail: list[dict[str, str | int | float | bool]] = []
-    monthly_progress: list[dict[str, str | int | float | bool]] = []
+    projects_list: list[dict[str, str | int | None]] = []
+    supervisores_list: list[dict[str, str | int]] = []
+    gantt_html: str = ""
     budget_utilization: str = "0%"
     timeline_adherence: str = "0%"
     resource_allocation: str = "0%"
+    stage_progress: list[dict[str, str | int | float | bool]] = []
+    milestone_detail: list[dict[str, str | int | float | bool]] = []
+    health_indicators: list[dict[str, str]] = []
 
     @rx.event
     def set_search_text(self, val: str):
         self.search_text = val
-
-    @rx.event
-    def set_selected_projects(self, val: str):
-        self.selected_projects = [val]
         yield MetricasState.calculate_metrics
 
     @rx.event
-    def load_metricas(self):
+    def set_filter_responsible(self, val: str):
+        self.filter_responsible = val
+        yield MetricasState.calculate_metrics
+
+    @rx.event
+    def toggle_planned_bars(self, val: bool):
+        self.show_planned_bars = val
+        yield MetricasState.calculate_metrics
+
+    @rx.event
+    def toggle_project(self, project_id: str):
+        if project_id in self.selected_projects:
+            self.selected_projects.remove(project_id)
+        else:
+            self.selected_projects.append(project_id)
+        yield MetricasState.calculate_metrics
+
+    @rx.event
+    def select_all_projects(self):
+        self.selected_projects = [p["id"] for p in self.filtered_projects_list]
+        yield MetricasState.calculate_metrics
+
+    @rx.event
+    def deselect_all_projects(self):
+        self.selected_projects = []
+        yield MetricasState.calculate_metrics
+
+    @rx.var
+    def filtered_projects_list(self) -> list[dict[str, str | int | None]]:
+        projs = self.projects_list
+        if self.filter_responsible:
+            projs = [
+                p
+                for p in projs
+                if str(p.get("supervisor_id", "")) == self.filter_responsible
+            ]
+        if self.search_text:
+            projs = [
+                p
+                for p in projs
+                if self.search_text.lower() in str(p.get("display", "")).lower()
+            ]
+        return projs
+
+    @rx.event
+    async def load_metricas(self):
         try:
             supabase = conectar()
             if not supabase:
                 return
-            res_p = (
-                supabase.table("proyectos")
-                .select("id, codigo, proyecto_text, cliente")
+            res_sup = (
+                supabase.table("usuarios")
+                .select("id, nombre_completo")
+                .in_("rol", ["admin", "Gerente", "Supervisor"])
                 .execute()
             )
+            if res_sup.data:
+                self.supervisores_list = [
+                    {"id": str(r["id"]), "nombre": r["nombre_completo"]}
+                    for r in res_sup.data
+                ]
+            res_p = supabase.table("proyectos").select("*").execute()
             if res_p.data:
                 projs = []
                 for r in res_p.data:
-                    codigo_str = str(r.get("codigo", ""))
-                    nombre_str = str(r.get("proyecto_text", ""))
-                    cliente_str = str(r.get("cliente", ""))
-                    searchable = f"{codigo_str} {nombre_str} {cliente_str}".lower()
-                    if self.search_text.lower() in searchable:
-                        projs.append(
-                            {
-                                "id": str(r["id"]),
-                                "codigo": codigo_str,
-                                "nombre": nombre_str,
-                                "cliente": cliente_str,
-                                "display": f"[{codigo_str}] {nombre_str} - {cliente_str}",
-                            }
-                        )
+                    projs.append(
+                        {
+                            "id": str(r["id"]),
+                            "codigo": str(r.get("codigo", "")),
+                            "nombre": str(r.get("proyecto_text", "")),
+                            "cliente": str(r.get("cliente", "")),
+                            "supervisor_id": str(r.get("supervisor_id", "")),
+                            "display": f"[{r.get('codigo', '')}] {r.get('proyecto_text', '')}",
+                            "p_dis_i": str(r.get("p_dis_i", "")),
+                            "p_dis_f": str(r.get("p_dis_f", "")),
+                            "p_fab_i": str(r.get("p_fab_i", "")),
+                            "p_fab_f": str(r.get("p_fab_f", "")),
+                            "p_tra_i": str(r.get("p_tra_i", "")),
+                            "p_tra_f": str(r.get("p_tra_f", "")),
+                            "p_ins_i": str(r.get("p_ins_i", "")),
+                            "p_ins_f": str(r.get("p_ins_f", "")),
+                            "p_ent_i": str(r.get("p_ent_i", "")),
+                            "p_ent_f": str(r.get("p_ent_f", "")),
+                        }
+                    )
                 self.projects_list = projs
-            if not self.selected_projects and self.projects_list:
-                self.selected_projects = [self.projects_list[0]["id"]]
+                if not self.selected_projects and projs:
+                    self.selected_projects = [projs[0]["id"]]
             yield MetricasState.calculate_metrics
         except Exception as e:
             logging.exception(f"Error loading metricas: {e}")
@@ -65,7 +142,7 @@ class MetricasState(rx.State):
     @rx.event
     def calculate_metrics(self):
         if not self.selected_projects:
-            self.gantt_data = []
+            self.gantt_html = ""
             self.health_indicators = []
             self.stage_progress = []
             self.milestone_detail = []
@@ -77,184 +154,263 @@ class MetricasState(rx.State):
             supabase = conectar()
             if not supabase:
                 return
-            selected_codes = []
-            selected_names = {}
-            for p in self.projects_list:
-                if p["id"] in self.selected_projects:
-                    selected_codes.append(p["codigo"])
-                    selected_names[p["id"]] = p["nombre"]
-            if not selected_codes:
-                return
-            res_av = (
-                supabase.table("avances_etapas")
-                .select("*")
-                .in_("codigo", selected_codes)
-                .execute()
-            )
-            avances_df = pd.DataFrame(res_av.data) if res_av.data else pd.DataFrame()
-            new_gantt = []
-            new_health = []
-            new_stage_prog = []
-            total_avg = 0.0
-            count_avg = 0
-            if not avances_df.empty:
-                for _, row in avances_df.iterrows():
-                    p_nom = str(row.get("proyecto_nombre", "Sin Nombre"))
-                    dis = float(row.get("av_diseno") or 0)
-                    fab = float(row.get("av_fabricacion") or 0)
-                    tra = float(row.get("av_traslado") or 0)
-                    ins = float(row.get("av_instalacion") or 0)
-                    ent = float(row.get("av_entrega") or 0)
-                    avg_prog = (dis + fab + tra + ins + ent) / 5.0
-                    total_avg += avg_prog
-                    count_avg += 1
-                    new_stage_prog.append(
-                        {
-                            "proyecto": p_nom,
-                            "diseno": dis,
-                            "fabricacion": fab,
-                            "traslado": tra,
-                            "instalacion": ins,
-                            "entrega": ent,
-                            "diseno_color": "bg-green-500"
-                            if dis > 75
-                            else "bg-yellow-500"
-                            if dis >= 50
-                            else "bg-red-500",
-                            "fabricacion_color": "bg-green-500"
-                            if fab > 75
-                            else "bg-yellow-500"
-                            if fab >= 50
-                            else "bg-red-500",
-                            "traslado_color": "bg-green-500"
-                            if tra > 75
-                            else "bg-yellow-500"
-                            if tra >= 50
-                            else "bg-red-500",
-                            "instalacion_color": "bg-green-500"
-                            if ins > 75
-                            else "bg-yellow-500"
-                            if ins >= 50
-                            else "bg-red-500",
-                            "entrega_color": "bg-green-500"
-                            if ent > 75
-                            else "bg-yellow-500"
-                            if ent >= 50
-                            else "bg-red-500",
-                        }
-                    )
-                    stages = [
-                        ("Diseño", dis),
-                        ("Fabricación", fab),
-                        ("Traslado", tra),
-                        ("Instalación", ins),
-                        ("Entrega", ent),
-                    ]
-                    for st_name, val in stages:
-                        color = (
-                            "green" if val > 75 else "yellow" if val >= 50 else "red"
-                        )
-                        new_gantt.append(
-                            {
-                                "name": f"{p_nom[:10]} - {st_name}",
-                                "stage": st_name,
-                                "progress_green": val if color == "green" else 0,
-                                "progress_yellow": val if color == "yellow" else 0,
-                                "progress_red": val if color == "red" else 0,
-                            }
-                        )
-                    status = (
-                        "Green"
-                        if avg_prog > 75
-                        else "Yellow"
-                        if avg_prog >= 50
-                        else "Red"
-                    )
-                    detail = (
-                        "A tiempo"
-                        if status == "Green"
-                        else "Riesgo retraso"
-                        if status == "Yellow"
-                        else "Crítico"
-                    )
-                    new_health.append(
-                        {
-                            "project": p_nom,
-                            "status": status,
-                            "detail": f"{int(avg_prog)}% - {detail}",
-                        }
-                    )
-            self.gantt_data = new_gantt
-            self.health_indicators = new_health
-            self.stage_progress = new_stage_prog
-            avg_all = total_avg / count_avg if count_avg > 0 else 0
-            self.budget_utilization = f"{min(100, int(avg_all + 10))}%"
-            self.timeline_adherence = f"{int(avg_all)}%"
-            self.resource_allocation = f"{min(100, int(avg_all + 5))}%"
+            selected_p = [
+                p for p in self.projects_list if p["id"] in self.selected_projects
+            ]
+            proj_ids = [int(p["id"]) for p in selected_p]
             res_prods = (
                 supabase.table("productos")
                 .select("id, proyecto_id")
-                .in_("proyecto_id", self.selected_projects)
+                .in_("proyecto_id", proj_ids)
                 .execute()
             )
-            new_milestones = []
-            if res_prods.data:
-                prods_df = pd.DataFrame(res_prods.data)
+            prods_df = (
+                pd.DataFrame(res_prods.data)
+                if res_prods.data
+                else pd.DataFrame(columns=["id", "proyecto_id"])
+            )
+            seg_df = pd.DataFrame(columns=["producto_id", "hito"])
+            if not prods_df.empty:
                 prod_ids = prods_df["id"].tolist()
                 seg_data = fetch_all_paginated(
                     supabase.table("seguimiento")
                     .select("producto_id, hito")
                     .in_("producto_id", prod_ids)
                 )
-                seg_df = (
-                    pd.DataFrame(seg_data)
-                    if seg_data
+                if seg_data:
+                    seg_df = pd.DataFrame(seg_data)
+            fig = go.Figure()
+            new_stage_progress = []
+            new_milestone_detail = []
+            new_health = []
+            total_avg = 0.0
+            for proj in selected_p:
+                p_id = int(proj["id"])
+                p_nom = proj["display"]
+                p_prods = prods_df[prods_df["proyecto_id"] == p_id]
+                total_prods = len(p_prods)
+                p_segs = (
+                    seg_df[seg_df["producto_id"].isin(p_prods["id"].tolist())]
+                    if not p_prods.empty and (not seg_df.empty)
                     else pd.DataFrame(columns=["producto_id", "hito"])
                 )
-                hitos = [
-                    "Diseñado",
-                    "Fabricado",
-                    "Material en Obra",
-                    "Material en Ubicación",
-                    "Instalación de Estructura",
-                    "Instalación de Puertas o Frentes",
-                    "Revisión y Observaciones",
-                    "Entrega",
-                ]
-                for p_id in self.selected_projects:
-                    p_nom = selected_names.get(p_id, "Desconocido")
-                    p_prods = prods_df[prods_df["proyecto_id"].astype(str) == str(p_id)]
-                    total_p = len(p_prods)
-                    row_data = {"proyecto": p_nom}
-                    if total_p > 0:
-                        p_prod_ids = p_prods["id"].tolist()
-                        p_segs = seg_df[seg_df["producto_id"].isin(p_prod_ids)]
-                        for h in hitos:
-                            c = len(p_segs[p_segs["hito"] == h])
-                            pct = round(c / total_p * 100, 1)
-                            row_data[h] = pct
-                    else:
-                        for h in hitos:
-                            row_data[h] = 0.0
-                    new_milestones.append(row_data)
-            self.milestone_detail = new_milestones
-            self.monthly_progress = [
-                {"month": "Ene", "completados": 10, "pendientes": 5},
-                {"month": "Feb", "completados": 15, "pendientes": 3},
-                {"month": "Mar", "completados": 20, "pendientes": 8},
-                {"month": "Abr", "completados": int(avg_all / 4), "pendientes": 10},
-            ]
+                stage_avgs = []
+                stage_prog_row = {"proyecto": p_nom}
+                milestone_row = {"proyecto": p_nom}
+                for m in MILESTONES:
+                    c = len(p_segs[p_segs["hito"] == m]) if not p_segs.empty else 0
+                    milestone_row[m] = (
+                        f"{c}/{total_prods}" if total_prods > 0 else "0/0"
+                    )
+                new_milestone_detail.append(milestone_row)
+                for stage, hitos in STAGE_MAPPING.items():
+                    c_total = (
+                        sum((len(p_segs[p_segs["hito"] == h]) for h in hitos))
+                        if not p_segs.empty
+                        else 0
+                    )
+                    max_c = len(hitos) * total_prods
+                    pct = round(c_total / max_c * 100, 1) if max_c > 0 else 0
+                    stage_avgs.append(pct)
+                    stage_key = (
+                        stage.lower()
+                        .replace("ñ", "n")
+                        .replace("ó", "o")
+                        .replace(" ", "_")
+                    )
+                    stage_prog_row[stage_key] = pct
+                    stage_prog_row[f"{stage_key}_color"] = (
+                        "bg-green-500"
+                        if pct > 75
+                        else "bg-yellow-500"
+                        if pct >= 50
+                        else "bg-red-500"
+                    )
+                    y_label = f"{p_nom[:15]} - {stage}"
+                    if self.show_planned_bars:
+                        map_prefix = {
+                            "Diseño": "p_dis",
+                            "Fabricación": "p_fab",
+                            "Traslado": "p_tra",
+                            "Instalación": "p_ins",
+                            "Entrega": "p_ent",
+                        }[stage]
+                        start_s = proj.get(f"{map_prefix}_i")
+                        end_s = proj.get(f"{map_prefix}_f")
+                        if start_s and end_s:
+                            try:
+                                s_dt = datetime.strptime(start_s, "%Y-%m-%d")
+                                e_dt = datetime.strptime(end_s, "%Y-%m-%d")
+                                if s_dt == e_dt:
+                                    e_dt += timedelta(hours=23)
+                                duration_ms = (e_dt - s_dt).total_seconds() * 1000
+                                fig.add_trace(
+                                    go.Bar(
+                                        y=[y_label],
+                                        x=[duration_ms],
+                                        base=[s_dt],
+                                        orientation="h",
+                                        marker_color="#87CEEB",
+                                        name="Planificado",
+                                        showlegend=False,
+                                        opacity=0.7,
+                                        hoverinfo="text",
+                                        hovertext=f"Planificado {stage}: {start_s} a {end_s}",
+                                    )
+                                )
+                            except Exception:
+                                logging.exception("Unexpected error")
+                    start_s = (
+                        proj.get(f"{map_prefix}_i") if self.show_planned_bars else None
+                    )
+                    if start_s and pct > 0:
+                        try:
+                            s_dt = datetime.strptime(start_s, "%Y-%m-%d")
+                            end_s = proj.get(f"{map_prefix}_f")
+                            e_dt = datetime.strptime(end_s, "%Y-%m-%d")
+                            if s_dt == e_dt:
+                                e_dt += timedelta(hours=23)
+                            total_ms = (e_dt - s_dt).total_seconds() * 1000
+                            actual_ms = total_ms * (pct / 100.0)
+                            color = (
+                                "#22c55e"
+                                if pct > 75
+                                else "#f59e0b"
+                                if pct >= 50
+                                else "#ef4444"
+                            )
+                            fig.add_trace(
+                                go.Bar(
+                                    y=[y_label],
+                                    x=[actual_ms],
+                                    base=[s_dt],
+                                    orientation="h",
+                                    marker_color=color,
+                                    name="Real",
+                                    showlegend=False,
+                                    hoverinfo="text",
+                                    hovertext=f"Real {stage}: {pct}%",
+                                )
+                            )
+                        except Exception:
+                            logging.exception("Unexpected error")
+                new_stage_progress.append(stage_prog_row)
+                proj_avg = sum(stage_avgs) / len(stage_avgs) if stage_avgs else 0
+                total_avg += proj_avg
+                status = (
+                    "Green" if proj_avg > 75 else "Yellow" if proj_avg >= 50 else "Red"
+                )
+                detail = (
+                    "A tiempo"
+                    if status == "Green"
+                    else "Riesgo retraso"
+                    if status == "Yellow"
+                    else "Crítico"
+                )
+                new_health.append(
+                    {
+                        "project": p_nom,
+                        "status": status,
+                        "detail": f"{int(proj_avg)}% - {detail}",
+                    }
+                )
+            fig.update_layout(
+                barmode="overlay",
+                height=max(400, len(selected_p) * 5 * 30 + 100),
+                margin=dict(l=20, r=20, t=30, b=20),
+                xaxis=dict(type="date", title="Fechas"),
+                yaxis=dict(title="", autorange="reversed", tickfont=dict(size=10)),
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+            )
+            fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="LightGray")
+            self.gantt_html = fig.to_html(include_plotlyjs="cdn", full_html=False)
+            self.stage_progress = new_stage_progress
+            self.milestone_detail = new_milestone_detail
+            self.health_indicators = new_health
+            overall = total_avg / len(selected_p) if selected_p else 0
+            self.budget_utilization = f"{min(100, int(overall + 8))}%"
+            self.timeline_adherence = f"{int(overall)}%"
+            self.resource_allocation = f"{min(100, int(overall + 3))}%"
         except Exception as e:
             logging.exception(f"Error calculating metrics: {e}")
+            self.gantt_html = ""
 
     @rx.event
     def export_resumen_etapas(self):
-        return rx.window_alert("Iniciando descarga de Resumen Etapas...")
+        if not self.stage_progress:
+            return rx.window_alert("No hay datos para exportar.")
+        try:
+            df = pd.DataFrame(self.stage_progress)
+            cols_to_keep = [
+                "proyecto",
+                "diseno",
+                "fabricacion",
+                "traslado",
+                "instalacion",
+                "entrega",
+            ]
+            df = df[[c for c in cols_to_keep if c in df.columns]]
+            output = io.BytesIO()
+            df.to_csv(output, index=False, encoding="utf-8-sig")
+            return rx.download(data=output.getvalue(), filename="Resumen_Etapas.csv")
+        except Exception as e:
+            logging.exception(f"Error exporting resumen: {e}")
 
     @rx.event
     def export_detalle_hitos(self):
-        return rx.window_alert("Iniciando descarga de Detalle Hitos...")
+        if not self.milestone_detail:
+            return rx.window_alert("No hay datos para exportar.")
+        try:
+            df = pd.DataFrame(self.milestone_detail)
+            output = io.BytesIO()
+            df.to_csv(output, index=False, encoding="utf-8-sig")
+            return rx.download(data=output.getvalue(), filename="Detalle_Hitos.csv")
+        except Exception as e:
+            logging.exception(f"Error exporting hitos: {e}")
 
     @rx.event
     def export_auditoria(self):
-        return rx.window_alert("Iniciando descarga de Auditoría de Piezas...")
+        if not self.selected_projects:
+            return rx.window_alert("No hay proyectos seleccionados.")
+        try:
+            supabase = conectar()
+            proj_ids = [int(x) for x in self.selected_projects]
+            res_prods = (
+                supabase.table("productos")
+                .select("id, codigo_etiqueta")
+                .in_("proyecto_id", proj_ids)
+                .execute()
+            )
+            if not res_prods.data:
+                return rx.window_alert("No hay productos.")
+            prod_df = pd.DataFrame(res_prods.data)
+            prod_ids_list = prod_df["id"].tolist()
+            seg_data = fetch_all_paginated(
+                supabase.table("seguimiento")
+                .select("producto_id, hito")
+                .in_("producto_id", prod_ids_list)
+            )
+            seg_df = (
+                pd.DataFrame(seg_data)
+                if seg_data
+                else pd.DataFrame(columns=["producto_id", "hito"])
+            )
+            rows = []
+            for _, p in prod_df.iterrows():
+                p_segs = (
+                    seg_df[seg_df["producto_id"] == p["id"]]
+                    if not seg_df.empty
+                    else pd.DataFrame()
+                )
+                row = {"Producto": p["codigo_etiqueta"]}
+                for m in MILESTONES:
+                    row[m] = 1 if not p_segs.empty and m in p_segs["hito"].values else 0
+                rows.append(row)
+            df_out = pd.DataFrame(rows)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df_out.to_excel(writer, index=False, sheet_name="Auditoria")
+            return rx.download(data=output.getvalue(), filename="Auditoria_0_1.xlsx")
+        except Exception as e:
+            logging.exception(f"Error exporting auditoria: {e}")
