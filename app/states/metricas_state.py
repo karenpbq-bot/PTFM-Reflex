@@ -189,7 +189,8 @@ class MetricasState(rx.State):
             project_separators = []
             for proj_idx, proj in enumerate(selected_p):
                 if proj_idx > 0:
-                    project_separators.append(y_pos - 0.5)
+                    y_pos += 1.5
+                    project_separators.append(y_pos - 0.75)
                 first_y_of_project = y_pos
                 p_id = int(proj["id"])
                 p_nom = proj["display"]
@@ -215,16 +216,9 @@ class MetricasState(rx.State):
                     milestone_row[f"{m}_val"] = pct_val
                 new_milestone_detail.append(milestone_row)
                 for stage, hitos in STAGE_MAPPING.items():
-                    y_plan_pos = -1
-                    if self.show_planned_bars:
-                        y_plan_pos = y_pos
-                        y_order_vals.append(y_pos)
-                        y_order_text.append(stage)
-                        y_pos += 1
-                    y_exec_pos = y_pos
+                    current_y = y_pos
                     y_order_vals.append(y_pos)
                     y_order_text.append(stage)
-                    y_pos += 1
                     c_total = (
                         sum((len(p_segs[p_segs["hito"] == h]) for h in hitos))
                         if not p_segs.empty
@@ -254,7 +248,7 @@ class MetricasState(rx.State):
                         "Instalación": "p_ins",
                         "Entrega": "p_ent",
                     }[stage]
-                    if self.show_planned_bars and y_plan_pos != -1:
+                    if self.show_planned_bars:
                         start_s = proj.get(f"{map_prefix}_i")
                         end_s = proj.get(f"{map_prefix}_f")
                         if start_s and end_s:
@@ -266,7 +260,7 @@ class MetricasState(rx.State):
                                 duration_ms = (e_dt - s_dt).total_seconds() * 1000
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_plan_pos],
+                                        y=[current_y],
                                         x=[duration_ms],
                                         base=[s_dt.isoformat()],
                                         orientation="h",
@@ -276,11 +270,11 @@ class MetricasState(rx.State):
                                         opacity=0.6,
                                         hoverinfo="text",
                                         hovertext=f"Plan {stage}: {start_s} a {end_s}",
-                                        width=0.6,
+                                        width=0.4,
                                     )
                                 )
                             except Exception:
-                                logging.exception("Error building planned bars")
+                                logging.exception("Unexpected error")
                     stage_segs = p_segs[p_segs["hito"].isin(hitos)]
                     if not stage_segs.empty and pct > 0:
                         try:
@@ -308,7 +302,7 @@ class MetricasState(rx.State):
                                 )
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_exec_pos],
+                                        y=[current_y],
                                         x=[duration_ms],
                                         base=[min_date.isoformat()],
                                         orientation="h",
@@ -317,11 +311,12 @@ class MetricasState(rx.State):
                                         showlegend=False,
                                         hoverinfo="text",
                                         hovertext=f"{stage}: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
-                                        width=0.6,
+                                        width=0.28,
                                     )
                                 )
                         except Exception:
-                            logging.exception("Error building actual bars")
+                            logging.exception("Unexpected error")
+                    y_pos += 1
                 new_stage_progress.append(stage_prog_row)
                 proj_avg = sum(stage_avgs) / len(stage_avgs) if stage_avgs else 0
                 status = (
@@ -342,27 +337,26 @@ class MetricasState(rx.State):
                     }
                 )
                 fig.add_annotation(
-                    text=f"<b>{proj['display'][:40]}</b>",
+                    text=f"<b>{proj['display'][:50]}</b>",
                     xref="paper",
                     x=0,
                     yref="y",
-                    y=first_y_of_project - 0.5,
+                    y=first_y_of_project - 0.6,
                     xanchor="left",
                     yanchor="bottom",
                     showarrow=False,
                     font=dict(size=11, color="#1e40af", family="Inter, sans-serif"),
-                    bgcolor="rgba(239,246,255,0.8)",
-                    borderpad=3,
+                    bgcolor="rgba(239,246,255,0.9)",
+                    borderpad=4,
                 )
             for sep_y in project_separators:
                 fig.add_hline(
                     y=sep_y, line_dash="dot", line_color="#d1d5db", line_width=1
                 )
-            dynamic_height = max(400, y_pos * 24 + 80)
+            dynamic_height = max(400, int(y_pos * 40 + 100))
             fig.update_layout(
-                barmode="group",
-                bargap=0.05,
-                bargroupgap=0.02,
+                barmode="overlay",
+                bargap=0.15,
                 height=dynamic_height,
                 margin=dict(l=10, r=10, t=30, b=20),
                 xaxis=dict(type="date", title=""),
