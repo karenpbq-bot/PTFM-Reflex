@@ -84,18 +84,24 @@ def login_page() -> rx.Component:
                         rx.fragment(),
                     ),
                     rx.el.button(
-                        rx.cond(
-                            LoginState.is_loading,
-                            rx.el.div(
-                                rx.icon("loader", class_name="h-5 w-5 animate-spin"),
-                                "Verificando...",
-                                class_name="flex items-center gap-2",
-                            ),
-                            "Ingresar al Sistema",
-                        ),
+                        "Ingresar al Sistema",
                         type="submit",
                         disabled=LoginState.is_loading,
-                        class_name="w-full bg-blue-600 text-white font-black py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 disabled:opacity-50",
+                        class_name="w-full bg-blue-600 text-white font-black py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 disabled:opacity-50 transition-all duration-200",
+                    ),
+                    rx.cond(
+                        LoginState.is_loading,
+                        rx.el.div(
+                            rx.icon(
+                                "loader",
+                                class_name="h-4 w-4 animate-spin text-blue-600",
+                            ),
+                            rx.el.span(
+                                "Verificando credenciales...",
+                                class_name="text-xs font-bold text-blue-600",
+                            ),
+                            class_name="flex items-center justify-center gap-2 mt-4 animate-pulse",
+                        ),
                     ),
                     on_submit=LoginState.login,
                     reset_on_submit=False,

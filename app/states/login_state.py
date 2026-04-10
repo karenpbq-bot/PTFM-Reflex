@@ -19,10 +19,10 @@ class LoginState(rx.State):
         self.show_password = not self.show_password
 
     @rx.event
-    async def login(self, form_data: dict):
+    def login(self, form_data: dict):
+        """Simplified login handler to prevent React DOM update race conditions during redirect."""
         self.is_loading = True
         self.error_message = ""
-        yield
         try:
             user = form_data.get("username", "").strip()
             pwd = form_data.get("password", "")
@@ -40,7 +40,7 @@ class LoginState(rx.State):
                 )
                 self.error_message = ""
                 self.is_loading = False
-                yield rx.redirect("/")
+                return rx.redirect("/")
             else:
                 self.error_message = (
                     "Credenciales inválidas. Verifique mayúsculas y minúsculas."
