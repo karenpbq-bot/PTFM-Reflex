@@ -252,7 +252,34 @@ class SeguimientoState(rx.State):
             prods = sorted(prods, key=lambda x: x["ubicacion"])
         elif self.group_by == "tipo":
             prods = sorted(prods, key=lambda x: x["tipo"])
+        elif self.group_by.startswith("sin_hito_"):
+            try:
+                hito_idx = int(self.group_by.split("_")[-1])
+                if 0 <= hito_idx < len(self.milestone_names):
+                    target_hito = self.milestone_names[hito_idx]
+                    filtered = []
+                    for p in prods:
+                        k = f"{p['id']}_{target_hito}"
+                        if k not in self.db_checks and k not in self.pending_checks:
+                            filtered.append(p)
+                    prods = filtered
+            except (ValueError, IndexError):
+                logging.exception("Unexpected error")
         return prods
+
+    @rx.event
+    async def bulk_mark_hito(self, hito_idx: int):
+        """Mark all currently filtered products for the given milestone (and all previous ones)."""
+        login_state = await self.get_state(LoginState)
+        self.current_user_role = login_state.user_role
+        prods = self.filtered_products
+        for p in prods:
+            product_id = str(p["id"])
+            for i in range(int(hito_idx) + 1):
+                h_name = self.milestone_names[i]
+                c_key = f"{product_id}_{h_name}"
+                if c_key not in self.db_checks and c_key not in self.pending_checks:
+                    self.pending_checks.append(c_key)
 
     @rx.event
     async def toggle_check(self, product_id: str, hito_idx: int):

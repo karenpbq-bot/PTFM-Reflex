@@ -247,7 +247,36 @@ def seguimiento_content() -> rx.Component:
                                                 ),
                                                 rx.el.option("Tipo", value="tipo"),
                                                 rx.el.option(
-                                                    "Sin avance", value="sin_avance"
+                                                    "Sin avance (todos vacíos)",
+                                                    value="sin_avance",
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Diseñado", value="sin_hito_0"
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Fabricado", value="sin_hito_1"
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Material en Obra",
+                                                    value="sin_hito_2",
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Material en Ubicación",
+                                                    value="sin_hito_3",
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Inst. Estructura",
+                                                    value="sin_hito_4",
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Inst. Puertas/Frentes",
+                                                    value="sin_hito_5",
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Revisión", value="sin_hito_6"
+                                                ),
+                                                rx.el.option(
+                                                    "Sin Entrega", value="sin_hito_7"
                                                 ),
                                                 on_change=SeguimientoState.set_group_by,
                                                 value=SeguimientoState.group_by,
