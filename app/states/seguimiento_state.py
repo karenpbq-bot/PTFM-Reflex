@@ -441,36 +441,71 @@ class SeguimientoState(rx.State):
         return len(self.filtered_products)
 
     @rx.var
-    def cell_colors(self) -> dict[str, str]:
-        colors = {}
-        HITO_COLORS_BY_IDX = {
-            0: "bg-green-500 hover:bg-green-400",
-            1: "bg-yellow-500 hover:bg-yellow-400",
-            2: "bg-orange-500 hover:bg-orange-400",
-            3: "bg-blue-500 hover:bg-blue-400",
-            4: "bg-blue-500 hover:bg-blue-400",
-            5: "bg-blue-600 hover:bg-blue-500",
-            6: "bg-blue-600 hover:bg-blue-500",
-            7: "bg-blue-700 hover:bg-blue-600",
+    def cell_styles(self) -> dict[str, dict[str, str]]:
+        styles = {}
+        SAVED_STYLE = {
+            "height": "2rem",
+            "width": "2rem",
+            "borderRadius": "0.5rem",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "transition": "all 0.2s",
+            "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
+            "backgroundColor": "#f97316",
+            "cursor": "pointer",
+        }
+        PENDING_STYLE = {
+            "height": "2rem",
+            "width": "2rem",
+            "borderRadius": "0.5rem",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "transition": "all 0.2s",
+            "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
+            "backgroundColor": "#fb923c",
+            "cursor": "pointer",
+            "animation": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        }
+        DELETE_STYLE = {
+            "height": "2rem",
+            "width": "2rem",
+            "borderRadius": "0.5rem",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "transition": "all 0.2s",
+            "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
+            "backgroundColor": "#eab308",
+            "cursor": "pointer",
+        }
+        EMPTY_STYLE = {
+            "height": "1.5rem",
+            "width": "1.5rem",
+            "borderRadius": "0.5rem",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "transition": "all 0.2s",
+            "backgroundColor": "#e5e7eb",
+            "cursor": "pointer",
+            "margin": "0 auto",
         }
         for p in self.all_products:
             pid = str(p["id"])
             for i, m in enumerate(self.milestone_names):
                 k_internal = f"{pid}_{m}"
                 k_frontend = f"{pid}_{i}"
-                base_style = "h-8 w-8 rounded-lg flex items-center justify-center transition-all shadow-sm"
-                empty_style = "h-6 w-6 rounded-lg bg-gray-200 flex items-center justify-center transition-all hover:bg-blue-400 shadow-sm mx-auto"
                 if k_internal in self.delete_pending:
-                    colors[k_frontend] = f"{base_style} bg-yellow-500"
+                    styles[k_frontend] = DELETE_STYLE
                 elif k_internal in self.db_checks:
-                    color_class = HITO_COLORS_BY_IDX.get(i, "bg-blue-500")
-                    colors[k_frontend] = f"{base_style} {color_class}"
+                    styles[k_frontend] = SAVED_STYLE
                 elif k_internal in self.pending_checks:
-                    color_class = HITO_COLORS_BY_IDX.get(i, "bg-blue-600")
-                    colors[k_frontend] = f"{base_style} {color_class} animate-pulse"
+                    styles[k_frontend] = PENDING_STYLE
                 else:
-                    colors[k_frontend] = empty_style
-        return colors
+                    styles[k_frontend] = EMPTY_STYLE
+        return styles
 
     @rx.event
     def export_seguimiento(self):

@@ -3,6 +3,19 @@ from app.components.navigation import layout
 from app.states.seguimiento_state import SeguimientoState, SeguimientoProduct
 from app.states.login_state import LoginState
 
+EMPTY_CELL_STYLE = {
+    "height": "1.5rem",
+    "width": "1.5rem",
+    "borderRadius": "0.5rem",
+    "display": "flex",
+    "alignItems": "center",
+    "justifyContent": "center",
+    "transition": "all 0.2s",
+    "backgroundColor": "#e5e7eb",
+    "cursor": "pointer",
+    "margin": "0 auto",
+}
+
 
 def milestone_cell(product: SeguimientoProduct, idx: int) -> rx.Component:
     check_key = f"{product['id'].to_string()}_{idx}"
@@ -19,10 +32,8 @@ def milestone_cell(product: SeguimientoProduct, idx: int) -> rx.Component:
             on_click=lambda: SeguimientoState.toggle_check(
                 product["id"].to_string(), idx
             ),
-            class_name=SeguimientoState.cell_colors.get(
-                check_key,
-                "h-6 w-6 rounded-lg bg-gray-200 flex items-center justify-center transition-all hover:bg-blue-400 shadow-sm mx-auto",
-            ),
+            style=SeguimientoState.cell_styles.get(check_key, EMPTY_CELL_STYLE),
+            class_name="",
         ),
         class_name="px-4 py-2 text-center align-middle",
     )
