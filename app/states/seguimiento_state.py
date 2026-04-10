@@ -442,8 +442,28 @@ class SeguimientoState(rx.State):
 
     @rx.var
     def cell_styles(self) -> dict[str, dict[str, str]]:
+        HITO_SAVED_COLORS = {
+            0: "#22c55e",
+            1: "#eab308",
+            2: "#f97316",
+            3: "#38bdf8",
+            4: "#38bdf8",
+            5: "#0ea5e9",
+            6: "#0ea5e9",
+            7: "#0284c7",
+        }
+        HITO_PENDING_COLORS = {
+            0: "#4ade80",
+            1: "#facc15",
+            2: "#fb923c",
+            3: "#7dd3fc",
+            4: "#7dd3fc",
+            5: "#38bdf8",
+            6: "#38bdf8",
+            7: "#0ea5e9",
+        }
         styles = {}
-        SAVED_STYLE = {
+        BASE_STYLE = {
             "height": "2rem",
             "width": "2rem",
             "borderRadius": "0.5rem",
@@ -452,32 +472,6 @@ class SeguimientoState(rx.State):
             "justifyContent": "center",
             "transition": "all 0.2s",
             "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
-            "backgroundColor": "#f97316",
-            "cursor": "pointer",
-        }
-        PENDING_STYLE = {
-            "height": "2rem",
-            "width": "2rem",
-            "borderRadius": "0.5rem",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "center",
-            "transition": "all 0.2s",
-            "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
-            "backgroundColor": "#fb923c",
-            "cursor": "pointer",
-            "animation": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        }
-        DELETE_STYLE = {
-            "height": "2rem",
-            "width": "2rem",
-            "borderRadius": "0.5rem",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "center",
-            "transition": "all 0.2s",
-            "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
-            "backgroundColor": "#eab308",
             "cursor": "pointer",
         }
         EMPTY_STYLE = {
@@ -498,11 +492,20 @@ class SeguimientoState(rx.State):
                 k_internal = f"{pid}_{m}"
                 k_frontend = f"{pid}_{i}"
                 if k_internal in self.delete_pending:
-                    styles[k_frontend] = DELETE_STYLE
+                    style = BASE_STYLE.copy()
+                    style["backgroundColor"] = "#eab308"
+                    styles[k_frontend] = style
                 elif k_internal in self.db_checks:
-                    styles[k_frontend] = SAVED_STYLE
+                    style = BASE_STYLE.copy()
+                    style["backgroundColor"] = HITO_SAVED_COLORS.get(i, "#f97316")
+                    styles[k_frontend] = style
                 elif k_internal in self.pending_checks:
-                    styles[k_frontend] = PENDING_STYLE
+                    style = BASE_STYLE.copy()
+                    style["backgroundColor"] = HITO_PENDING_COLORS.get(i, "#fb923c")
+                    style["animation"] = (
+                        "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+                    )
+                    styles[k_frontend] = style
                 else:
                     styles[k_frontend] = EMPTY_STYLE
         return styles
