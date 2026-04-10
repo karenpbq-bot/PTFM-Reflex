@@ -12,6 +12,9 @@ def index() -> rx.Component:
 
 app = rx.App(
     theme=rx.theme(appearance="light"),
+    stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    ],
     head_components=[
         rx.el.script(src="https://cdn.plot.ly/plotly-3.4.0.min.js"),
         rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
