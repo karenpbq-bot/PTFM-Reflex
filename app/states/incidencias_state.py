@@ -95,23 +95,33 @@ class IncidenciasState(rx.State):
     @rx.event
     async def load_incidencias(self):
         try:
+            from app.states.login_state import LoginState
+
+            login_state = await self.get_state(LoginState)
+            user_role = login_state.user_role
+            user_id = str(login_state.user_id)
             supabase = conectar()
             if not supabase:
                 return
             res_proj = (
                 supabase.table("proyectos")
-                .select("id, codigo, proyecto_text")
+                .select("id, codigo, proyecto_text, supervisor_id")
                 .order("created_at", desc=True)
                 .execute()
             )
             if res_proj.data:
+                all_p = res_proj.data
+                if user_role == "Supervisor":
+                    all_p = [
+                        p for p in all_p if str(p.get("supervisor_id", "")) == user_id
+                    ]
                 self.projects_list = [
                     {
                         "id": str(p["id"]),
                         "codigo": str(p["codigo"]),
                         "label": f"[{p['codigo']}] {p['proyecto_text']}",
                     }
-                    for p in res_proj.data
+                    for p in all_p
                 ]
             res_inc = (
                 supabase.table("incidencias")

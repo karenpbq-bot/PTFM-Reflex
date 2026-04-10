@@ -16,6 +16,7 @@ class SeguimientoProject(TypedDict):
     id: str
     label: str
     codigo: str
+    supervisor_id: str
 
 
 class SeguimientoProduct(TypedDict):
@@ -136,7 +137,7 @@ class SeguimientoState(rx.State):
             if not supabase:
                 return
             query = supabase.table("proyectos").select(
-                "id, codigo, proyecto_text, cliente"
+                "id, codigo, proyecto_text, cliente, supervisor_id"
             )
             if self.search_text:
                 query = query.or_(
@@ -144,14 +145,22 @@ class SeguimientoState(rx.State):
                 )
             res = query.order("created_at", desc=True).execute()
             if res.data:
-                self.projects_list = [
+                projects = [
                     {
                         "id": str(r["id"]),
                         "label": f"[{r['codigo']}] {r['proyecto_text']}",
                         "codigo": str(r["codigo"]),
+                        "supervisor_id": str(r.get("supervisor_id", "")),
                     }
                     for r in res.data
                 ]
+                if self.current_user_role == "Supervisor":
+                    user_id_str = str(login_state.user_id)
+                    self.projects_list = [
+                        p for p in projects if p.get("supervisor_id") == user_id_str
+                    ]
+                else:
+                    self.projects_list = projects
             else:
                 self.projects_list = []
         except Exception as e:

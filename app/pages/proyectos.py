@@ -1,6 +1,7 @@
 import reflex as rx
 from app.components.navigation import layout
 from app.states.proyectos_state import ProyectosState, TimelineStage, ProductData
+from app.states.login_state import LoginState
 
 
 def stage_input(label: str, var_name: str) -> rx.Component:
@@ -59,6 +60,14 @@ def product_row(prod: ProductData) -> rx.Component:
         rx.el.td(
             prod["ml"].to_string(),
             class_name="px-4 py-3 text-sm text-gray-700 text-right",
+        ),
+        rx.el.td(
+            rx.el.button(
+                rx.icon("pencil", class_name="h-4 w-4"),
+                on_click=lambda: ProyectosState.start_edit_product(prod),
+                class_name="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors",
+            ),
+            class_name="px-4 py-3 text-center",
         ),
         class_name="border-b border-gray-100 hover:bg-gray-50",
     )
@@ -283,6 +292,188 @@ def tab_registro() -> rx.Component:
     )
 
 
+def project_list_row(proj: dict) -> rx.Component:
+    estatus_color = rx.match(
+        proj["estatus"],
+        ("Activo", "bg-green-100 text-green-700"),
+        ("Pausado", "bg-yellow-100 text-yellow-700"),
+        ("Finalizado", "bg-gray-100 text-gray-700"),
+        "bg-gray-100 text-gray-600",
+    )
+    return rx.el.tr(
+        rx.el.td(
+            proj["codigo"], class_name="px-4 py-3 text-sm font-bold text-blue-600"
+        ),
+        rx.el.td(
+            proj["nombre"], class_name="px-4 py-3 text-sm font-medium text-gray-900"
+        ),
+        rx.el.td(proj["cliente"], class_name="px-4 py-3 text-sm text-gray-600"),
+        rx.el.td(proj["responsable"], class_name="px-4 py-3 text-sm text-gray-600"),
+        rx.el.td(
+            proj["nro_productos"],
+            class_name="px-4 py-3 text-sm text-gray-700 text-center font-medium",
+        ),
+        rx.el.td(
+            proj["avance"],
+            class_name="px-4 py-3 text-sm text-gray-700 text-center font-medium",
+        ),
+        rx.el.td(
+            rx.el.span(
+                proj["estatus"],
+                class_name=f"px-2 py-1 rounded-full text-xs font-bold {estatus_color}",
+            ),
+            class_name="px-4 py-3",
+        ),
+        class_name="border-b border-gray-100 hover:bg-gray-50",
+    )
+
+
+def tab_listado() -> rx.Component:
+    return rx.el.div(
+        rx.el.div(
+            rx.el.h3(
+                "Listado de Proyectos",
+                class_name="text-lg font-bold text-gray-800 mb-4",
+            ),
+            rx.el.div(
+                rx.el.table(
+                    rx.el.thead(
+                        rx.el.tr(
+                            rx.el.th(
+                                "Código",
+                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Nombre",
+                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Cliente",
+                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Responsable",
+                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Productos",
+                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Avance",
+                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                            rx.el.th(
+                                "Estatus",
+                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                            ),
+                        )
+                    ),
+                    rx.el.tbody(
+                        rx.foreach(
+                            ProyectosState.projects_with_details, project_list_row
+                        )
+                    ),
+                    class_name="w-full table-auto",
+                ),
+                class_name="overflow-x-auto border border-gray-100 rounded-xl",
+            ),
+            class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
+        )
+    )
+
+
+def edit_product_modal() -> rx.Component:
+    return rx.cond(
+        ProyectosState.show_edit_product_modal,
+        rx.el.div(
+            rx.el.div(
+                rx.el.div(
+                    rx.el.h3(
+                        "Editar Producto", class_name="text-xl font-bold text-gray-900"
+                    ),
+                    rx.el.button(
+                        rx.icon("x", class_name="h-5 w-5"),
+                        on_click=ProyectosState.cancel_edit_product,
+                        class_name="text-gray-400 hover:text-gray-600",
+                    ),
+                    class_name="flex justify-between items-center mb-6",
+                ),
+                rx.el.div(
+                    rx.el.label(
+                        "Ubicación",
+                        class_name="block text-sm font-medium text-gray-700 mb-1",
+                    ),
+                    rx.el.input(
+                        default_value=ProyectosState.edit_prod_ubicacion,
+                        on_change=ProyectosState.set_edit_prod_ubicacion,
+                        class_name="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500",
+                    ),
+                    class_name="mb-4",
+                ),
+                rx.el.div(
+                    rx.el.label(
+                        "Tipo",
+                        class_name="block text-sm font-medium text-gray-700 mb-1",
+                    ),
+                    rx.el.input(
+                        default_value=ProyectosState.edit_prod_tipo,
+                        on_change=ProyectosState.set_edit_prod_tipo,
+                        class_name="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500",
+                    ),
+                    class_name="mb-4",
+                ),
+                rx.el.div(
+                    rx.el.div(
+                        rx.el.label(
+                            "Cantidad",
+                            class_name="block text-sm font-medium text-gray-700 mb-1",
+                        ),
+                        rx.el.input(
+                            type="number",
+                            default_value=ProyectosState.edit_prod_ctd.to_string(),
+                            on_change=ProyectosState.set_edit_prod_ctd,
+                            min="1",
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500",
+                        ),
+                    ),
+                    rx.el.div(
+                        rx.el.label(
+                            "ML",
+                            class_name="block text-sm font-medium text-gray-700 mb-1",
+                        ),
+                        rx.el.input(
+                            type="number",
+                            step="0.01",
+                            default_value=ProyectosState.edit_prod_ml.to_string(),
+                            on_change=ProyectosState.set_edit_prod_ml,
+                            min="0",
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500",
+                        ),
+                    ),
+                    class_name="grid grid-cols-2 gap-4 mb-6",
+                ),
+                rx.el.div(
+                    rx.el.button(
+                        "Cancelar",
+                        on_click=ProyectosState.cancel_edit_product,
+                        class_name="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-xl transition-colors",
+                    ),
+                    rx.el.button(
+                        "Guardar Cambios",
+                        on_click=ProyectosState.save_edit_product,
+                        class_name="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors",
+                    ),
+                    class_name="flex justify-end gap-3",
+                ),
+                class_name="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl",
+            ),
+            class_name="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4",
+        ),
+        rx.fragment(),
+    )
+
+
 def tab_matriz() -> rx.Component:
     return rx.el.div(
         rx.el.div(
@@ -502,6 +693,10 @@ def tab_matriz() -> rx.Component:
                                     rx.el.th(
                                         "ML",
                                         class_name="px-4 py-2 text-right text-xs font-bold text-gray-500 uppercase bg-gray-50",
+                                    ),
+                                    rx.el.th(
+                                        "Acciones",
+                                        class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50",
                                     ),
                                 )
                             ),
@@ -728,45 +923,73 @@ def tab_gestion() -> rx.Component:
 def proyectos_page() -> rx.Component:
     return layout(
         rx.el.div(
-            rx.radix.tabs.root(
-                rx.radix.tabs.list(
-                    rx.radix.tabs.trigger(
-                        rx.el.span(
-                            "🆕 Registrar Proyecto",
-                            class_name="flex items-center gap-2",
-                        ),
-                        value="tab1",
-                        class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
-                    ),
-                    rx.radix.tabs.trigger(
-                        rx.el.span(
-                            "📦 Matriz de Productos",
-                            class_name="flex items-center gap-2",
-                        ),
-                        value="tab2",
-                        class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
-                    ),
-                    rx.radix.tabs.trigger(
-                        rx.el.span(
-                            "⚙️ Gestión y Edición", class_name="flex items-center gap-2"
-                        ),
-                        value="tab3",
-                        class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
-                    ),
-                    class_name="flex gap-4 border-b border-gray-200 mb-6",
-                ),
-                rx.radix.tabs.content(
-                    tab_registro(), value="tab1", class_name="outline-none"
-                ),
-                rx.radix.tabs.content(
-                    tab_matriz(), value="tab2", class_name="outline-none"
-                ),
-                rx.radix.tabs.content(
-                    tab_gestion(), value="tab3", class_name="outline-none"
-                ),
-                default_value="tab1",
+            edit_product_modal(),
+            rx.cond(
+                LoginState.user_role == "Supervisor",
+                supervisor_view_content(),
+                admin_view_content(),
             ),
             class_name="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700",
         ),
         "Proyectos",
+    )
+
+
+def supervisor_view_content() -> rx.Component:
+    return rx.radix.tabs.root(
+        rx.radix.tabs.list(
+            rx.radix.tabs.trigger(
+                rx.el.span(
+                    "📋 Listado de Proyectos", class_name="flex items-center gap-2"
+                ),
+                value="tab_listado",
+                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+            ),
+            class_name="flex gap-4 border-b border-gray-200 mb-6",
+        ),
+        rx.radix.tabs.content(
+            tab_listado(), value="tab_listado", class_name="outline-none"
+        ),
+        default_value="tab_listado",
+    )
+
+
+def admin_view_content() -> rx.Component:
+    return rx.radix.tabs.root(
+        rx.radix.tabs.list(
+            rx.radix.tabs.trigger(
+                rx.el.span(
+                    "📋 Listado de Proyectos", class_name="flex items-center gap-2"
+                ),
+                value="tab_listado",
+                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+            ),
+            rx.radix.tabs.trigger(
+                rx.el.span(
+                    "🆕 Registrar Proyecto", class_name="flex items-center gap-2"
+                ),
+                value="tab1",
+                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+            ),
+            rx.radix.tabs.trigger(
+                rx.el.span(
+                    "📦 Matriz de Productos", class_name="flex items-center gap-2"
+                ),
+                value="tab2",
+                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+            ),
+            rx.radix.tabs.trigger(
+                rx.el.span("⚙️ Gestión y Edición", class_name="flex items-center gap-2"),
+                value="tab3",
+                class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+            ),
+            class_name="flex gap-4 border-b border-gray-200 mb-6",
+        ),
+        rx.radix.tabs.content(
+            tab_listado(), value="tab_listado", class_name="outline-none"
+        ),
+        rx.radix.tabs.content(tab_registro(), value="tab1", class_name="outline-none"),
+        rx.radix.tabs.content(tab_matriz(), value="tab2", class_name="outline-none"),
+        rx.radix.tabs.content(tab_gestion(), value="tab3", class_name="outline-none"),
+        default_value="tab_listado",
     )

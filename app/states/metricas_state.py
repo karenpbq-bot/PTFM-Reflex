@@ -97,6 +97,11 @@ class MetricasState(rx.State):
     @rx.event
     async def load_metricas(self):
         try:
+            from app.states.login_state import LoginState
+
+            login_state = await self.get_state(LoginState)
+            user_role = login_state.user_role
+            user_id = str(login_state.user_id)
             supabase = conectar()
             if not supabase:
                 return
@@ -135,6 +140,8 @@ class MetricasState(rx.State):
                             "p_ent_f": str(r.get("p_ent_f", "")),
                         }
                     )
+                if user_role == "Supervisor":
+                    projs = [p for p in projs if p.get("supervisor_id") == user_id]
                 self.projects_list = projs
                 if not self.selected_projects and projs:
                     self.selected_projects = [projs[0]["id"]]

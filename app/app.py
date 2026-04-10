@@ -35,7 +35,11 @@ from app.pages.usuarios import usuarios_page
 
 app.add_page(index, route="/", on_load=[SeguimientoState.load_projects_list])
 app.add_page(login_page, route="/login")
-app.add_page(proyectos_page, route="/proyectos", on_load=[ProyectosState.load_projects])
+app.add_page(
+    proyectos_page,
+    route="/proyectos",
+    on_load=[ProyectosState.load_projects, ProyectosState.load_projects_with_details],
+)
 app.add_page(
     seguimiento_page,
     route="/seguimiento",

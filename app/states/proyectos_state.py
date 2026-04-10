@@ -19,7 +19,7 @@ class ProjectData(TypedDict):
     cliente: str
     estatus: str
     partida: str
-    supervisor_id: int
+    supervisor_id: str
     f_ini: str
     f_fin: str
 
@@ -42,6 +42,7 @@ class TimelineStage(TypedDict):
 
 class ProyectosState(rx.State):
     projects: list[ProjectData] = []
+    projects_with_details: list[dict[str, str]] = []
     supervisores: list[SupervisorData] = []
     reg_codigo: str = ""
     reg_nombre: str = ""
@@ -73,6 +74,12 @@ class ProyectosState(rx.State):
     edit_estatus: str = ""
     edit_message: str = ""
     edit_error: str = ""
+    editing_product_id: str = ""
+    edit_prod_ubicacion: str = ""
+    edit_prod_tipo: str = ""
+    edit_prod_ctd: int = 1
+    edit_prod_ml: float = 0.0
+    show_edit_product_modal: bool = False
 
     @rx.var
     def total_pct(self) -> int:
@@ -126,8 +133,8 @@ class ProyectosState(rx.State):
 
     @rx.event
     def load_initial_data(self):
-        self.load_supervisores()
-        self.load_projects()
+        yield ProyectosState.load_supervisores
+        yield ProyectosState.load_projects
 
     @rx.event
     def load_supervisores(self):
@@ -149,7 +156,7 @@ class ProyectosState(rx.State):
             logging.exception(f"Error loading supervisores: {e}")
 
     @rx.event
-    def load_projects(self):
+    async def load_projects(self):
         try:
             supabase = conectar()
             if supabase:
@@ -170,14 +177,74 @@ class ProyectosState(rx.State):
                             "cliente": r.get("cliente", ""),
                             "estatus": r.get("estatus", "Activo"),
                             "partida": r.get("partida", ""),
-                            "supervisor_id": r.get("supervisor_id", 0),
+                            "supervisor_id": str(r.get("supervisor_id", ""))
+                            if r.get("supervisor_id")
+                            else "",
                             "f_ini": r.get("f_ini", ""),
                             "f_fin": r.get("f_fin", ""),
                         }
                         for r in res.data
                     ]
+                    from app.states.login_state import LoginState
+
+                    login_state = await self.get_state(LoginState)
+                    if login_state.user_role == "Supervisor":
+                        self.projects = [
+                            p
+                            for p in self.projects
+                            if p["supervisor_id"] == str(login_state.user_id)
+                        ]
         except Exception as e:
             logging.exception(f"Error loading projects: {e}")
+
+    @rx.event
+    async def load_projects_with_details(self):
+        try:
+            supabase = conectar()
+            if not supabase:
+                return
+            res_p = (
+                supabase.table("proyectos")
+                .select(
+                    "id, codigo, proyecto_text, cliente, estatus, supervisor_id, avance"
+                )
+                .order("created_at", desc=True)
+                .execute()
+            )
+            if not res_p.data:
+                self.projects_with_details = []
+                return
+            res_u = supabase.table("usuarios").select("id, nombre_completo").execute()
+            user_map = {u["id"]: u["nombre_completo"] for u in res_u.data or []}
+            res_prod = supabase.table("productos").select("proyecto_id").execute()
+            from collections import Counter
+
+            prod_counts = Counter((p["proyecto_id"] for p in res_prod.data or []))
+            from app.states.login_state import LoginState
+
+            login_state = await self.get_state(LoginState)
+            is_supervisor = login_state.user_role == "Supervisor"
+            user_id = login_state.user_id
+            details = []
+            for p in res_p.data:
+                if is_supervisor and p.get("supervisor_id") != user_id:
+                    continue
+                sup_name = user_map.get(p.get("supervisor_id"), "Sin asignar")
+                details.append(
+                    {
+                        "id": str(p["id"]),
+                        "codigo": str(p.get("codigo", "")),
+                        "nombre": str(p.get("proyecto_text", "")),
+                        "cliente": str(p.get("cliente", "")),
+                        "responsable": sup_name,
+                        "nro_productos": str(prod_counts.get(p["id"], 0)),
+                        "avance": f"{p.get('avance', 0)}%",
+                        "estatus": str(p.get("estatus", "Activo")),
+                    }
+                )
+            self.projects_with_details = details
+        except Exception as e:
+            logging.exception(f"Error loading projects with details: {e}")
 
     @rx.event
     def save_project(self):
@@ -227,7 +294,8 @@ class ProyectosState(rx.State):
             self.reg_nombre = ""
             self.reg_cliente = ""
             self.reg_partida = ""
-            self.load_projects()
+            yield ProyectosState.load_projects
+            yield ProyectosState.load_projects_with_details
         except Exception as e:
             logging.exception(f"Error saving project: {e}")
             self.reg_error = (
@@ -454,7 +522,8 @@ class ProyectosState(rx.State):
                     "id", self.sel_proj_tab3
                 ).execute()
                 self.edit_message = "Proyecto actualizado correctamente."
-                self.load_projects()
+                yield ProyectosState.load_projects
+                yield ProyectosState.load_projects_with_details
         except Exception as e:
             logging.exception(f"Error updating project: {e}")
             self.edit_error = "Error al actualizar el proyecto."
@@ -492,10 +561,57 @@ class ProyectosState(rx.State):
                 "Proyecto y todos sus registros asociados eliminados correctamente."
             )
             self.sel_proj_tab3 = ""
-            self.load_projects()
+            yield ProyectosState.load_projects
+            yield ProyectosState.load_projects_with_details
             if self.sel_proj_tab2 == self.sel_proj_tab3:
                 self.sel_proj_tab2 = ""
                 self.products_tab2 = []
         except Exception as e:
             logging.exception(f"Error deleting project completely: {e}")
             self.edit_error = "Error al eliminar el proyecto."
+
+    @rx.event
+    def start_edit_product(self, product: ProductData):
+        """Open the edit modal with the product's current data."""
+        self.editing_product_id = str(product["id"])
+        self.edit_prod_ubicacion = product["ubicacion"]
+        self.edit_prod_tipo = product["tipo"]
+        self.edit_prod_ctd = product["ctd"]
+        self.edit_prod_ml = product["ml"]
+        self.show_edit_product_modal = True
+
+    @rx.event
+    def cancel_edit_product(self):
+        self.show_edit_product_modal = False
+        self.editing_product_id = ""
+
+    @rx.event
+    def save_edit_product(self):
+        """Save the edited product data to Supabase."""
+        self.matriz_message = ""
+        self.matriz_error = ""
+        if not self.editing_product_id:
+            return
+        try:
+            supabase = conectar()
+            if not supabase:
+                self.matriz_error = "Error de conexión."
+                return
+            data = {
+                "ubicacion": self.edit_prod_ubicacion,
+                "tipo": self.edit_prod_tipo,
+                "ctd": int(self.edit_prod_ctd),
+                "ml": float(self.edit_prod_ml),
+            }
+            supabase.table("productos").update(data).eq(
+                "id", int(self.editing_product_id)
+            ).execute()
+            self.show_edit_product_modal = False
+            self.editing_product_id = ""
+            self.matriz_message = "Producto actualizado correctamente."
+            self.load_products()
+        except Exception as e:
+            import logging
+
+            logging.exception(f"Error updating product: {e}")
+            self.matriz_error = "Error al actualizar el producto."
