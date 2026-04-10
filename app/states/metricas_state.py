@@ -34,7 +34,7 @@ class MetricasState(rx.State):
     selected_projects: list[str] = []
     projects_list: list[dict[str, str | int | None]] = []
     supervisores_list: list[dict[str, str | int]] = []
-    gantt_html: str = '<div id="gantt-plotly-chart" style="width:100%;min-height:500px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">Seleccione proyectos para visualizar</div>'
+    gantt_html: str = '<iframe srcdoc="" style="width:100%;height:500px;border:none;" scrolling="no"></iframe>'
     stage_progress: list[dict[str, str | int | float | bool]] = []
     milestone_detail: list[dict[str, str | int | float | bool]] = []
     health_indicators: list[dict[str, str]] = []
@@ -140,7 +140,7 @@ class MetricasState(rx.State):
     @rx.event
     def calculate_metrics(self):
         if not self.selected_projects:
-            self.gantt_html = '<div id="gantt-plotly-chart" style="width:100%;min-height:500px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">Seleccione proyectos para visualizar</div>'
+            self.gantt_html = '<div style="width:100%;min-height:500px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">Seleccione proyectos para visualizar</div>'
             self.health_indicators = []
             self.stage_progress = []
             self.milestone_detail = []
@@ -164,12 +164,12 @@ class MetricasState(rx.State):
                 if res_prods.data
                 else pd.DataFrame(columns=["id", "proyecto_id"])
             )
-            seg_df = pd.DataFrame(columns=["producto_id", "hito"])
+            seg_df = pd.DataFrame(columns=["producto_id", "hito", "fecha"])
             if not prods_df.empty:
                 prod_ids = prods_df["id"].tolist()
                 seg_data = fetch_all_paginated(
                     supabase.table("seguimiento")
-                    .select("producto_id, hito")
+                    .select("producto_id, hito, fecha")
                     .in_("producto_id", prod_ids)
                 )
                 if seg_data:
@@ -186,7 +186,7 @@ class MetricasState(rx.State):
                 p_segs = (
                     seg_df[seg_df["producto_id"].isin(p_prods["id"].tolist())]
                     if not p_prods.empty and (not seg_df.empty)
-                    else pd.DataFrame(columns=["producto_id", "hito"])
+                    else pd.DataFrame(columns=["producto_id", "hito", "fecha"])
                 )
                 stage_avgs = []
                 stage_prog_row = {"proyecto": p_nom}
@@ -247,43 +247,51 @@ class MetricasState(rx.State):
                                         marker_color="#87CEEB",
                                         name="Planificado",
                                         showlegend=False,
-                                        opacity=0.7,
+                                        opacity=0.4,
                                         hoverinfo="text",
                                         hovertext=f"Planificado {stage}: {start_s} a {end_s}",
                                     )
                                 )
                             except Exception:
                                 logging.exception("Error building planned bars")
-                    start_planned = proj.get(f"{map_prefix}_i")
-                    if start_planned and pct > 0:
+                    stage_segs = p_segs[p_segs["hito"].isin(hitos)]
+                    if not stage_segs.empty and pct > 0:
                         try:
-                            s_dt = datetime.strptime(start_planned, "%Y-%m-%d")
-                            end_planned = proj.get(f"{map_prefix}_f")
-                            e_dt = datetime.strptime(end_planned, "%Y-%m-%d")
-                            if s_dt == e_dt:
-                                e_dt += timedelta(hours=23)
-                            total_ms = (e_dt - s_dt).total_seconds() * 1000
-                            actual_ms = total_ms * (pct / 100.0)
-                            color = (
-                                "#22c55e"
-                                if pct > 75
-                                else "#f59e0b"
-                                if pct >= 50
-                                else "#ef4444"
+                            dates = pd.to_datetime(
+                                stage_segs["fecha"],
+                                format="%d/%m/%Y",
+                                errors="coerce",
+                                dayfirst=True,
                             )
-                            fig.add_trace(
-                                go.Bar(
-                                    y=[y_label],
-                                    x=[actual_ms],
-                                    base=[s_dt.isoformat()],
-                                    orientation="h",
-                                    marker_color=color,
-                                    name="Real",
-                                    showlegend=False,
-                                    hoverinfo="text",
-                                    hovertext=f"Real {stage}: {pct}%",
+                            valid_dates = dates.dropna()
+                            if len(valid_dates) > 0:
+                                min_date = valid_dates.min()
+                                max_date = valid_dates.max()
+                                if min_date == max_date:
+                                    max_date += timedelta(hours=23)
+                                duration_ms = (
+                                    max_date - min_date
+                                ).total_seconds() * 1000
+                                color = (
+                                    "#22c55e"
+                                    if pct > 75
+                                    else "#f59e0b"
+                                    if pct >= 50
+                                    else "#ef4444"
                                 )
-                            )
+                                fig.add_trace(
+                                    go.Bar(
+                                        y=[y_label],
+                                        x=[duration_ms],
+                                        base=[min_date.isoformat()],
+                                        orientation="h",
+                                        marker_color=color,
+                                        name="Real",
+                                        showlegend=False,
+                                        hoverinfo="text",
+                                        hovertext=f"Etapa: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
+                                    )
+                                )
                         except Exception:
                             logging.exception("Error building actual bars")
                 new_stage_progress.append(stage_prog_row)
@@ -305,23 +313,26 @@ class MetricasState(rx.State):
                         "detail": f"{int(proj_avg)}% - {detail}",
                     }
                 )
+            dynamic_height = max(500, len(selected_p) * 5 * 35 + 100)
             fig.update_layout(
                 barmode="overlay",
-                height=max(400, len(selected_p) * 5 * 30 + 100),
-                margin=dict(l=20, r=20, t=30, b=20),
-                xaxis=dict(type="date", title="Fechas"),
-                yaxis=dict(title="", autorange="reversed", tickfont=dict(size=10)),
+                height=dynamic_height,
+                margin=dict(l=10, r=10, t=30, b=20),
+                xaxis=dict(type="date", title=""),
+                yaxis=dict(title="", autorange="reversed", tickfont=dict(size=11)),
                 plot_bgcolor="white",
                 paper_bgcolor="white",
                 showlegend=False,
+                font=dict(family="Inter, sans-serif"),
             )
-            fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="LightGray")
-            div_id = "gantt-plotly-chart"
-            fig_json = fig.to_json()
-            dynamic_height = max(500, len(selected_p) * 5 * 30 + 100)
-            self.gantt_html = f'<div id="{div_id}" style="height: {dynamic_height}px; width: 100%;"></div>'
-            script = f"\n            (function() {{\n                var gd = document.getElementById('{div_id}');\n                if (gd && typeof Plotly !== 'undefined') {{\n                    var data = {fig_json};\n                    Plotly.react(gd, data.data, data.layout, {{responsive: true}});\n                }} else {{\n                    setTimeout(function() {{\n                        var gd = document.getElementById('{div_id}');\n                        if (gd && typeof Plotly !== 'undefined') {{\n                            var data = {fig_json};\n                            Plotly.react(gd, data.data, data.layout, {{responsive: true}});\n                        }}\n                    }}, 1500);\n                }}\n            }})();\n            "
-            return rx.call_script(script)
+            fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#e5e7eb")
+            fig.update_yaxes(showgrid=False)
+            self.stage_progress = new_stage_progress
+            self.milestone_detail = new_milestone_detail
+            self.health_indicators = new_health
+            full_html = fig.to_html(include_plotlyjs="cdn", full_html=True)
+            srcdoc_safe = full_html.replace('"', "&quot;")
+            self.gantt_html = f'<iframe srcdoc="{srcdoc_safe}" style="width:100%;height:{dynamic_height}px;border:none;" scrolling="no"></iframe>'
         except Exception as e:
             logging.exception(f"Error calculating metrics: {e}")
 

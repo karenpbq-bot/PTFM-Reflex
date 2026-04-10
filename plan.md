@@ -18,3 +18,11 @@
 - [x] Build Detalle de Hitos table with milestone counts per project
 - [x] Build Export Center with 3 download buttons (Resumen CSV, Detalle CSV, Auditoría 0/1)
 - [x] Add toggle to show/hide planned (celeste) bars, filter by responsible
+
+## Phase 9: Gantt Fix & 2-Tab Restructure ✅
+- [x] Fix Gantt rendering: use iframe+srcdoc approach (React dangerouslySetInnerHTML strips scripts)
+- [x] Restructure into 2 tabs: "📊 Gantt Comparativo" and "📋 Tablas y Exportación"
+- [x] Remove artificial KPIs (Presupuesto, Cronograma, Recursos) - not based on real data
+- [x] Verify Gantt bars use actual dates from seguimiento (first check → last check per stage)
+- [x] Verify exports work correctly (CSV resumen, CSV hitos, Excel auditoría)
+- [x] Verify health indicators show correct semaforo status per project
