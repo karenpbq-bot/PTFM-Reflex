@@ -259,6 +259,7 @@ class MetricasState(rx.State):
                                         opacity=0.6,
                                         hoverinfo="text",
                                         hovertext=f"Plan {stage}: {start_s} a {end_s}",
+                                        width=0.25,
                                     )
                                 )
                             except Exception:
@@ -299,6 +300,7 @@ class MetricasState(rx.State):
                                         showlegend=False,
                                         hoverinfo="text",
                                         hovertext=f"{stage}: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
+                                        width=0.25,
                                     )
                                 )
                         except Exception:
@@ -325,6 +327,7 @@ class MetricasState(rx.State):
             dynamic_height = max(500, len(selected_p) * 10 * 28 + 100)
             fig.update_layout(
                 barmode="group",
+                bargap=0.1,
                 height=dynamic_height,
                 margin=dict(l=10, r=10, t=30, b=20),
                 xaxis=dict(type="date", title=""),
