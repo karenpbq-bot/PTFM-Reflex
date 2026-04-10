@@ -1,0 +1,13 @@
+column_name,data_type,is_nullable
+id,integer,NO
+created_at,timestamp with time zone,YES
+proyecto_id,integer,YES
+supervisor_id,integer,YES
+tipo_requerimiento,text,YES
+categoria,text,YES
+detalles,jsonb,YES
+estado,text,YES
+fecha_almacen,text,YES
+fecha_solicitante,text,YES
+fecha_teowin,text,YES
+obs_gestion,text,YES
