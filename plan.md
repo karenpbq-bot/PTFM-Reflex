@@ -1,11 +1,10 @@
-# PTFM-Reflex - Seguimiento Filters & Bulk Mark
+# PTFM-Reflex - Fix Seguimiento Table Rendering
 
-## Phase 1-11: Anteriores ✅
+## Phase 1-12: Previous Phases ✅
 - [x] All previous phases completed
 
-## Phase 12: Seguimiento - Advanced Filters & Bulk Marking ✅
-- [x] Add 8 new "Agrupar por" options to filter products missing specific milestones (sin_hito_0 through sin_hito_7)
-- [x] Update filtered_products computed var to support all new filter modes while preserving existing behavior
-- [x] Bulk-mark header buttons removed for stability (bulk_mark_hito handler kept in state for future use)
-- [x] Clean .web rebuild performed to resolve hydration error
-- [x] All state defaults verified non-null, all Python code compiles cleanly
+## Phase 13: Fix Seguimiento Table Stability ✅
+- [x] Remove bulk-mark checkbox buttons from table headers (the ones that trigger `bulk_mark_hito`) to eliminate insertBefore DOM conflicts
+- [x] Ensure all filtering (group_by, sin_hito_X, sin_avance, primary_filter, refinement_filter) happens entirely in the backend State computed var, not in frontend rendering
+- [x] Simplify the table row rendering to use flat, predictable structure without nested rx.cond conflicts
+- [x] Verify the milestone_cell component uses stable keys and minimal conditional DOM changes

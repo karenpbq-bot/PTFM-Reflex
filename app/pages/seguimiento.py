@@ -8,81 +8,22 @@ def milestone_cell(
     product: SeguimientoProduct, idx: int, hito_name: str
 ) -> rx.Component:
     check_key = product["id"].to_string() + "_" + hito_name
+    cell_status = SeguimientoState.cell_statuses.get(check_key, "empty")
     return rx.el.td(
         rx.el.button(
-            rx.cond(
-                SeguimientoState.delete_pending.contains(check_key),
-                rx.icon("x", class_name="h-4 w-4 text-white"),
-                rx.cond(
-                    SeguimientoState.db_checks.contains(check_key),
-                    rx.icon("check", class_name="h-4 w-4 text-white"),
-                    rx.cond(
-                        SeguimientoState.pending_checks.contains(check_key),
-                        rx.icon("check", class_name="h-4 w-4 text-white"),
-                        rx.fragment(),
-                    ),
-                ),
+            rx.match(
+                cell_status,
+                ("delete_pending", rx.icon("x", class_name="h-4 w-4 text-white")),
+                ("saved", rx.icon("check", class_name="h-4 w-4 text-white")),
+                ("pending", rx.icon("check", class_name="h-4 w-4 text-white")),
+                rx.fragment(),
             ),
             on_click=lambda: SeguimientoState.toggle_check(
                 product["id"].to_string(), idx
             ),
-            class_name=rx.cond(
-                SeguimientoState.delete_pending.contains(check_key),
-                "h-8 w-8 rounded-lg bg-yellow-500 flex items-center justify-center transition-all hover:bg-yellow-600 shadow-sm",
-                rx.cond(
-                    SeguimientoState.db_checks.contains(check_key),
-                    rx.match(
-                        idx,
-                        (
-                            0,
-                            "h-8 w-8 rounded-lg bg-green-400 flex items-center justify-center transition-all hover:bg-green-500 shadow-sm",
-                        ),
-                        (
-                            1,
-                            "h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center transition-all hover:bg-amber-500 shadow-sm",
-                        ),
-                        (
-                            2,
-                            "h-8 w-8 rounded-lg bg-orange-400 flex items-center justify-center transition-all hover:bg-orange-500 shadow-sm",
-                        ),
-                        "h-8 w-8 rounded-lg bg-blue-400 flex items-center justify-center transition-all hover:bg-blue-500 shadow-sm",
-                    ),
-                    rx.cond(
-                        SeguimientoState.pending_checks.contains(check_key),
-                        rx.match(
-                            idx,
-                            (
-                                0,
-                                "h-8 w-8 rounded-lg bg-green-600 flex items-center justify-center transition-all hover:bg-green-700 shadow-sm animate-pulse",
-                            ),
-                            (
-                                1,
-                                "h-8 w-8 rounded-lg bg-amber-600 flex items-center justify-center transition-all hover:bg-amber-700 shadow-sm animate-pulse",
-                            ),
-                            (
-                                2,
-                                "h-8 w-8 rounded-lg bg-orange-600 flex items-center justify-center transition-all hover:bg-orange-700 shadow-sm animate-pulse",
-                            ),
-                            "h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center transition-all hover:bg-blue-700 shadow-sm animate-pulse",
-                        ),
-                        rx.match(
-                            idx,
-                            (
-                                0,
-                                "h-6 w-6 rounded-lg bg-green-500/50 flex items-center justify-center transition-all hover:bg-green-500 shadow-sm mx-auto",
-                            ),
-                            (
-                                1,
-                                "h-6 w-6 rounded-lg bg-amber-500/50 flex items-center justify-center transition-all hover:bg-amber-500 shadow-sm mx-auto",
-                            ),
-                            (
-                                2,
-                                "h-6 w-6 rounded-lg bg-orange-500/50 flex items-center justify-center transition-all hover:bg-orange-500 shadow-sm mx-auto",
-                            ),
-                            "h-6 w-6 rounded-lg bg-blue-500/50 flex items-center justify-center transition-all hover:bg-blue-500 shadow-sm mx-auto",
-                        ),
-                    ),
-                ),
+            class_name=SeguimientoState.cell_colors.get(
+                check_key,
+                "h-6 w-6 rounded-lg bg-gray-200 flex items-center justify-center transition-all hover:bg-blue-400 shadow-sm mx-auto",
             ),
         ),
         class_name="px-4 py-2 text-center align-middle",
@@ -528,6 +469,17 @@ def seguimiento_content() -> rx.Component:
                         rx.el.span(
                             f"{SeguimientoState.avance_seleccion}%",
                             class_name="text-lg font-black text-green-600 ml-2",
+                        ),
+                        class_name="flex items-center gap-1 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm",
+                    ),
+                    rx.el.div(
+                        rx.el.span(
+                            "Productos Filtrados",
+                            class_name="text-xs text-gray-500 font-bold uppercase",
+                        ),
+                        rx.el.span(
+                            SeguimientoState.filtered_count.to_string(),
+                            class_name="text-lg font-black text-gray-800 ml-2",
                         ),
                         class_name="flex items-center gap-1 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm",
                     ),

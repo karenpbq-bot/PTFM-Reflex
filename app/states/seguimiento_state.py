@@ -73,6 +73,23 @@ class SeguimientoState(rx.State):
     def is_supervisor_only(self) -> bool:
         return ~SeguimientoState.is_jefe
 
+    @rx.var
+    def cell_statuses(self) -> dict[str, str]:
+        statuses = {}
+        for p in self.filtered_products:
+            pid = str(p["id"])
+            for m in self.milestone_names:
+                k = f"{pid}_{m}"
+                if k in self.delete_pending:
+                    statuses[k] = "delete_pending"
+                elif k in self.db_checks:
+                    statuses[k] = "saved"
+                elif k in self.pending_checks:
+                    statuses[k] = "pending"
+                else:
+                    statuses[k] = "empty"
+        return statuses
+
     @rx.event
     def set_search_text(self, val: str):
         self.search_text = val
@@ -268,20 +285,6 @@ class SeguimientoState(rx.State):
         return prods
 
     @rx.event
-    async def bulk_mark_hito(self, hito_idx: int):
-        """Mark all currently filtered products for the given milestone (and all previous ones)."""
-        login_state = await self.get_state(LoginState)
-        self.current_user_role = login_state.user_role
-        prods = self.filtered_products
-        for p in prods:
-            product_id = str(p["id"])
-            for i in range(int(hito_idx) + 1):
-                h_name = self.milestone_names[i]
-                c_key = f"{product_id}_{h_name}"
-                if c_key not in self.db_checks and c_key not in self.pending_checks:
-                    self.pending_checks.append(c_key)
-
-    @rx.event
     async def toggle_check(self, product_id: str, hito_idx: int):
         login_state = await self.get_state(LoginState)
         self.current_user_role = login_state.user_role
@@ -431,6 +434,41 @@ class SeguimientoState(rx.State):
                 if k in self.db_checks or k in self.pending_checks:
                     total_weight += self.milestone_weights.get(m, 0)
         return round(total_weight / len(prods), 2)
+
+    @rx.var
+    def filtered_count(self) -> int:
+        return len(self.filtered_products)
+
+    @rx.var
+    def cell_colors(self) -> dict[str, str]:
+        colors = {}
+        HITO_COLORS = {
+            "Diseñado": "bg-green-500 hover:bg-green-400",
+            "Fabricado": "bg-yellow-500 hover:bg-yellow-400",
+            "Material en Obra": "bg-orange-500 hover:bg-orange-400",
+            "Material en Ubicación": "bg-blue-500 hover:bg-blue-400",
+            "Instalación de Estructura": "bg-blue-500 hover:bg-blue-400",
+            "Instalación de Puertas o Frentes": "bg-blue-600 hover:bg-blue-500",
+            "Revisión y Observaciones": "bg-blue-600 hover:bg-blue-500",
+            "Entrega": "bg-blue-700 hover:bg-blue-600",
+        }
+        for p in self.all_products:
+            pid = str(p["id"])
+            for m in self.milestone_names:
+                check_key = f"{pid}_{m}"
+                base_style = "h-8 w-8 rounded-lg flex items-center justify-center transition-all shadow-sm"
+                empty_style = "h-6 w-6 rounded-lg bg-gray-200 flex items-center justify-center transition-all hover:bg-blue-400 shadow-sm mx-auto"
+                if check_key in self.delete_pending:
+                    colors[check_key] = f"{base_style} bg-yellow-500"
+                elif check_key in self.db_checks:
+                    color_class = HITO_COLORS.get(m, "bg-blue-500")
+                    colors[check_key] = f"{base_style} {color_class}"
+                elif check_key in self.pending_checks:
+                    color_class = HITO_COLORS.get(m, "bg-blue-600")
+                    colors[check_key] = f"{base_style} {color_class} animate-pulse"
+                else:
+                    colors[check_key] = empty_style
+        return colors
 
     @rx.event
     def export_seguimiento(self):
