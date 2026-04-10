@@ -34,7 +34,7 @@ def user_card(user: UserData) -> rx.Component:
         rx.el.div(
             rx.el.span(
                 user["rol"],
-                class_name="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-50 text-blue-600 w-fit",
+                class_name="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 w-fit",
             ),
             rx.el.div(
                 rx.el.button(
@@ -161,7 +161,7 @@ def usuarios_page() -> rx.Component:
                         ),
                         rx.el.p(
                             LoginState.user_role,
-                            class_name="text-sm text-center text-gray-500 mb-6 uppercase tracking-wider font-bold",
+                            class_name="text-sm text-center text-gray-500 mb-6 tracking-wider font-bold",
                         ),
                         rx.el.div(
                             rx.icon("id-card", class_name="h-4 w-4 text-gray-400"),

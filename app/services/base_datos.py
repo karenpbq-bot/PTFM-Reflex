@@ -58,7 +58,7 @@ def obtener_supervisores():
         res = (
             supabase.table("usuarios")
             .select("id, nombre_completo, rol")
-            .in_("rol", ["Administrador", "Gerente", "Supervisor"])
+            .in_("rol", ["admin", "Gerente", "Supervisor"])
             .execute()
         )
         df = pd.DataFrame(res.data)

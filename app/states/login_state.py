@@ -37,7 +37,7 @@ class LoginState(rx.State):
             res = validar_usuario(user, pwd)
             if res:
                 self.is_authenticated = True
-                self.user_role = str(res.get("rol", ""))
+                self.user_role = res.get("rol", "")
                 self.user_id = int(res.get("id", 0))
                 self.user_full_name = str(
                     res.get("nombre_completo", res.get("nombre_usuario", ""))
