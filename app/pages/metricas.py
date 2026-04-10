@@ -121,44 +121,48 @@ def stage_progress_row(item: dict) -> rx.Component:
     )
 
 
+def milestone_cell_td(item: dict, m_name: str) -> rx.Component:
+    pct_key = f"{m_name}_pct"
+    frac_key = f"{m_name}_frac"
+    val_key = f"{m_name}_val"
+    return rx.el.td(
+        rx.el.div(
+            rx.el.p(
+                item[pct_key],
+                class_name=rx.cond(
+                    item[val_key].to(float) >= 75,
+                    "text-sm font-bold text-green-600",
+                    rx.cond(
+                        item[val_key].to(float) >= 50,
+                        "text-sm font-bold text-yellow-600",
+                        "text-sm font-bold text-red-600",
+                    ),
+                ),
+            ),
+            rx.el.p(
+                item[frac_key],
+                class_name="text-[11px] text-gray-400 mt-0.5 font-medium",
+            ),
+            class_name="flex flex-col items-center",
+        ),
+        class_name="px-3 py-3 text-center border-b border-gray-100",
+    )
+
+
 def milestone_row(item: dict) -> rx.Component:
     return rx.el.tr(
         rx.el.td(
             item["proyecto"],
             class_name="px-4 py-3 text-sm font-semibold text-gray-900 border-b border-gray-100",
         ),
-        rx.el.td(
-            item["Diseñado"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Fabricado"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Material en Obra"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Material en Ubicación"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Instalación de Estructura"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Instalación de Puertas o Frentes"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Revisión y Observaciones"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
-        rx.el.td(
-            item["Entrega"],
-            class_name="px-4 py-3 text-sm text-gray-600 text-center border-b border-gray-100",
-        ),
+        milestone_cell_td(item, "Diseñado"),
+        milestone_cell_td(item, "Fabricado"),
+        milestone_cell_td(item, "Material en Obra"),
+        milestone_cell_td(item, "Material en Ubicación"),
+        milestone_cell_td(item, "Instalación de Estructura"),
+        milestone_cell_td(item, "Instalación de Puertas o Frentes"),
+        milestone_cell_td(item, "Revisión y Observaciones"),
+        milestone_cell_td(item, "Entrega"),
         class_name="hover:bg-gray-50",
     )
 

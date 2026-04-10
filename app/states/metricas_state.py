@@ -201,9 +201,14 @@ class MetricasState(rx.State):
                 milestone_row = {"proyecto": p_nom}
                 for m in MILESTONES:
                     c = len(p_segs[p_segs["hito"] == m]) if not p_segs.empty else 0
-                    milestone_row[m] = (
+                    pct_val = (
+                        round(c / total_prods * 100, 1) if total_prods > 0 else 0.0
+                    )
+                    milestone_row[f"{m}_pct"] = f"{pct_val}%"
+                    milestone_row[f"{m}_frac"] = (
                         f"{c}/{total_prods}" if total_prods > 0 else "0/0"
                     )
+                    milestone_row[f"{m}_val"] = pct_val
                 new_milestone_detail.append(milestone_row)
                 for stage, hitos in STAGE_MAPPING.items():
                     y_plan = f"{p_nom_short} - {stage} (Plan)"
