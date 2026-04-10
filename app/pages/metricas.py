@@ -167,9 +167,95 @@ def milestone_row(item: dict) -> rx.Component:
     )
 
 
+def collapsible_project_selector() -> rx.Component:
+    return rx.el.div(
+        rx.el.button(
+            rx.el.div(
+                rx.icon("folder-search", class_name="h-5 w-5 text-blue-600"),
+                rx.el.span(
+                    "📊 Selección de Proyectos para Análisis",
+                    class_name="text-lg font-bold text-gray-800",
+                ),
+                class_name="flex items-center gap-2",
+            ),
+            rx.icon(
+                rx.cond(
+                    MetricasState.show_project_selector, "chevron-up", "chevron-down"
+                ),
+                class_name="h-5 w-5 text-gray-400",
+            ),
+            on_click=MetricasState.toggle_project_selector,
+            class_name="flex items-center justify-between w-full p-4 hover:bg-gray-50 rounded-t-2xl transition-colors",
+        ),
+        rx.cond(
+            MetricasState.show_project_selector,
+            rx.el.div(
+                rx.el.div(
+                    rx.el.div(
+                        rx.el.input(
+                            placeholder="Filtrar proyectos...",
+                            on_change=MetricasState.set_search_text.debounce(500),
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm",
+                        ),
+                        rx.el.select(
+                            rx.el.option("Todos los supervisores", value=""),
+                            rx.foreach(
+                                MetricasState.supervisores_list,
+                                lambda s: rx.el.option(s["nombre"], value=s["id"]),
+                            ),
+                            on_change=MetricasState.set_filter_responsible,
+                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none text-sm",
+                        ),
+                        class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4",
+                    ),
+                    rx.el.div(
+                        rx.el.div(
+                            rx.el.button(
+                                "Seleccionar Todos",
+                                on_click=MetricasState.select_all_projects,
+                                class_name="text-sm text-blue-600 hover:text-blue-800 font-medium",
+                            ),
+                            rx.el.span("|", class_name="mx-2 text-gray-300"),
+                            rx.el.button(
+                                "Deseleccionar",
+                                on_click=MetricasState.deselect_all_projects,
+                                class_name="text-sm text-gray-500 hover:text-gray-700 font-medium",
+                            ),
+                            class_name="flex items-center",
+                        ),
+                        rx.el.label(
+                            rx.el.input(
+                                type="checkbox",
+                                checked=MetricasState.show_planned_bars,
+                                on_change=MetricasState.toggle_planned_bars,
+                                class_name="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
+                            ),
+                            rx.el.span(
+                                "Mostrar Planificado (Celeste)",
+                                class_name="text-sm font-medium text-gray-700",
+                            ),
+                            class_name="flex items-center cursor-pointer",
+                        ),
+                        class_name="flex justify-between items-center mb-2",
+                    ),
+                    rx.el.div(
+                        rx.foreach(
+                            MetricasState.filtered_projects_list, project_checkbox
+                        ),
+                        class_name="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50/50",
+                    ),
+                    class_name="px-4 pb-4",
+                )
+            ),
+        ),
+        class_name="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6",
+    )
+
+
 def metricas_page() -> rx.Component:
     return layout(
         rx.el.div(
+            collapsible_project_selector(),
             rx.radix.tabs.root(
                 rx.radix.tabs.list(
                     rx.radix.tabs.trigger(
@@ -191,78 +277,6 @@ def metricas_page() -> rx.Component:
                 ),
                 rx.radix.tabs.content(
                     rx.el.div(
-                        rx.el.div(
-                            rx.el.h3(
-                                "Selección de Proyectos para Análisis",
-                                class_name="text-lg font-bold text-gray-800 mb-4",
-                            ),
-                            rx.el.div(
-                                rx.el.div(
-                                    rx.el.input(
-                                        placeholder="Filtrar proyectos...",
-                                        on_change=MetricasState.set_search_text.debounce(
-                                            500
-                                        ),
-                                        class_name="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm",
-                                    ),
-                                    rx.el.select(
-                                        rx.el.option(
-                                            "Todos los supervisores", value=""
-                                        ),
-                                        rx.foreach(
-                                            MetricasState.supervisores_list,
-                                            lambda s: rx.el.option(
-                                                s["nombre"], value=s["id"]
-                                            ),
-                                        ),
-                                        on_change=MetricasState.set_filter_responsible,
-                                        class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none text-sm",
-                                    ),
-                                    class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4",
-                                ),
-                                rx.el.div(
-                                    rx.el.div(
-                                        rx.el.button(
-                                            "Seleccionar Todos",
-                                            on_click=MetricasState.select_all_projects,
-                                            class_name="text-sm text-blue-600 hover:text-blue-800 font-medium",
-                                        ),
-                                        rx.el.span(
-                                            "|", class_name="mx-2 text-gray-300"
-                                        ),
-                                        rx.el.button(
-                                            "Deseleccionar",
-                                            on_click=MetricasState.deselect_all_projects,
-                                            class_name="text-sm text-gray-500 hover:text-gray-700 font-medium",
-                                        ),
-                                        class_name="flex items-center",
-                                    ),
-                                    rx.el.label(
-                                        rx.el.input(
-                                            type="checkbox",
-                                            checked=MetricasState.show_planned_bars,
-                                            on_change=MetricasState.toggle_planned_bars,
-                                            class_name="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
-                                        ),
-                                        rx.el.span(
-                                            "Mostrar Planificado (Celeste)",
-                                            class_name="text-sm font-medium text-gray-700",
-                                        ),
-                                        class_name="flex items-center cursor-pointer",
-                                    ),
-                                    class_name="flex justify-between items-center mb-2",
-                                ),
-                                rx.el.div(
-                                    rx.foreach(
-                                        MetricasState.filtered_projects_list,
-                                        project_checkbox,
-                                    ),
-                                    class_name="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50/50",
-                                ),
-                                class_name="flex flex-col",
-                            ),
-                            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
-                        ),
                         rx.el.div(
                             rx.el.div(
                                 rx.el.div(
@@ -332,7 +346,7 @@ def metricas_page() -> rx.Component:
                                 class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
                             ),
                             class_name="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8",
-                        ),
+                        )
                     ),
                     value="gantt",
                     class_name="outline-none",

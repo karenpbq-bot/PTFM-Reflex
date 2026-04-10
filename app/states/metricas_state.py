@@ -38,6 +38,11 @@ class MetricasState(rx.State):
     stage_progress: list[dict[str, str | int | float | bool]] = []
     milestone_detail: list[dict[str, str | int | float | bool]] = []
     health_indicators: list[dict[str, str]] = []
+    show_project_selector: bool = False
+
+    @rx.event
+    def toggle_project_selector(self):
+        self.show_project_selector = not self.show_project_selector
 
     @rx.event
     def set_search_text(self, val: str):
