@@ -178,9 +178,17 @@ class MetricasState(rx.State):
             new_stage_progress = []
             new_milestone_detail = []
             new_health = []
+            y_order = []
+            for proj in selected_p:
+                p_nom_short = proj["display"][:20]
+                for stage in STAGE_MAPPING.keys():
+                    if self.show_planned_bars:
+                        y_order.append(f"{p_nom_short} - {stage} (Plan)")
+                    y_order.append(f"{p_nom_short} - {stage} (Ejec)")
             for proj in selected_p:
                 p_id = int(proj["id"])
                 p_nom = proj["display"]
+                p_nom_short = proj["display"][:20]
                 p_prods = prods_df[prods_df["proyecto_id"] == p_id]
                 total_prods = len(p_prods)
                 p_segs = (
@@ -198,6 +206,8 @@ class MetricasState(rx.State):
                     )
                 new_milestone_detail.append(milestone_row)
                 for stage, hitos in STAGE_MAPPING.items():
+                    y_plan = f"{p_nom_short} - {stage} (Plan)"
+                    y_exec = f"{p_nom_short} - {stage} (Ejec)"
                     c_total = (
                         sum((len(p_segs[p_segs["hito"] == h]) for h in hitos))
                         if not p_segs.empty
@@ -220,7 +230,6 @@ class MetricasState(rx.State):
                         if pct >= 50
                         else "bg-red-500"
                     )
-                    y_label = f"{p_nom[:15]} - {stage}"
                     map_prefix = {
                         "Diseño": "p_dis",
                         "Fabricación": "p_fab",
@@ -240,16 +249,16 @@ class MetricasState(rx.State):
                                 duration_ms = (e_dt - s_dt).total_seconds() * 1000
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_label],
+                                        y=[y_plan],
                                         x=[duration_ms],
                                         base=[s_dt.isoformat()],
                                         orientation="h",
                                         marker_color="#87CEEB",
                                         name="Planificado",
                                         showlegend=False,
-                                        opacity=0.4,
+                                        opacity=0.6,
                                         hoverinfo="text",
-                                        hovertext=f"Planificado {stage}: {start_s} a {end_s}",
+                                        hovertext=f"Plan {stage}: {start_s} a {end_s}",
                                     )
                                 )
                             except Exception:
@@ -281,7 +290,7 @@ class MetricasState(rx.State):
                                 )
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_label],
+                                        y=[y_exec],
                                         x=[duration_ms],
                                         base=[min_date.isoformat()],
                                         orientation="h",
@@ -289,7 +298,7 @@ class MetricasState(rx.State):
                                         name="Real",
                                         showlegend=False,
                                         hoverinfo="text",
-                                        hovertext=f"Etapa: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
+                                        hovertext=f"{stage}: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
                                     )
                                 )
                         except Exception:
@@ -313,13 +322,19 @@ class MetricasState(rx.State):
                         "detail": f"{int(proj_avg)}% - {detail}",
                     }
                 )
-            dynamic_height = max(500, len(selected_p) * 5 * 35 + 100)
+            dynamic_height = max(500, len(selected_p) * 10 * 28 + 100)
             fig.update_layout(
-                barmode="overlay",
+                barmode="group",
                 height=dynamic_height,
                 margin=dict(l=10, r=10, t=30, b=20),
                 xaxis=dict(type="date", title=""),
-                yaxis=dict(title="", autorange="reversed", tickfont=dict(size=11)),
+                yaxis=dict(
+                    title="",
+                    autorange="reversed",
+                    tickfont=dict(size=10),
+                    categoryorder="array",
+                    categoryarray=y_order,
+                ),
                 plot_bgcolor="white",
                 paper_bgcolor="white",
                 showlegend=False,
