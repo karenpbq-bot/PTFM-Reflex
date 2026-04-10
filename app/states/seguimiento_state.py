@@ -42,7 +42,7 @@ class SeguimientoState(rx.State):
     delete_pending: list[str] = []
     product_notes: dict[str, str] = {}
     current_user_role: str = ""
-    show_project_selector: bool = True
+    show_project_selector: bool = False
     show_advanced_config: bool = False
     milestone_names: list[str] = [
         "Diseñado",
@@ -78,16 +78,17 @@ class SeguimientoState(rx.State):
         statuses = {}
         for p in self.filtered_products:
             pid = str(p["id"])
-            for m in self.milestone_names:
-                k = f"{pid}_{m}"
-                if k in self.delete_pending:
-                    statuses[k] = "delete_pending"
-                elif k in self.db_checks:
-                    statuses[k] = "saved"
-                elif k in self.pending_checks:
-                    statuses[k] = "pending"
+            for i, m in enumerate(self.milestone_names):
+                k_internal = f"{pid}_{m}"
+                k_frontend = f"{pid}_{i}"
+                if k_internal in self.delete_pending:
+                    statuses[k_frontend] = "delete_pending"
+                elif k_internal in self.db_checks:
+                    statuses[k_frontend] = "saved"
+                elif k_internal in self.pending_checks:
+                    statuses[k_frontend] = "pending"
                 else:
-                    statuses[k] = "empty"
+                    statuses[k_frontend] = "empty"
         return statuses
 
     @rx.event
@@ -442,32 +443,33 @@ class SeguimientoState(rx.State):
     @rx.var
     def cell_colors(self) -> dict[str, str]:
         colors = {}
-        HITO_COLORS = {
-            "Diseñado": "bg-green-500 hover:bg-green-400",
-            "Fabricado": "bg-yellow-500 hover:bg-yellow-400",
-            "Material en Obra": "bg-orange-500 hover:bg-orange-400",
-            "Material en Ubicación": "bg-blue-500 hover:bg-blue-400",
-            "Instalación de Estructura": "bg-blue-500 hover:bg-blue-400",
-            "Instalación de Puertas o Frentes": "bg-blue-600 hover:bg-blue-500",
-            "Revisión y Observaciones": "bg-blue-600 hover:bg-blue-500",
-            "Entrega": "bg-blue-700 hover:bg-blue-600",
+        HITO_COLORS_BY_IDX = {
+            0: "bg-green-500 hover:bg-green-400",
+            1: "bg-yellow-500 hover:bg-yellow-400",
+            2: "bg-orange-500 hover:bg-orange-400",
+            3: "bg-blue-500 hover:bg-blue-400",
+            4: "bg-blue-500 hover:bg-blue-400",
+            5: "bg-blue-600 hover:bg-blue-500",
+            6: "bg-blue-600 hover:bg-blue-500",
+            7: "bg-blue-700 hover:bg-blue-600",
         }
         for p in self.all_products:
             pid = str(p["id"])
-            for m in self.milestone_names:
-                check_key = f"{pid}_{m}"
+            for i, m in enumerate(self.milestone_names):
+                k_internal = f"{pid}_{m}"
+                k_frontend = f"{pid}_{i}"
                 base_style = "h-8 w-8 rounded-lg flex items-center justify-center transition-all shadow-sm"
                 empty_style = "h-6 w-6 rounded-lg bg-gray-200 flex items-center justify-center transition-all hover:bg-blue-400 shadow-sm mx-auto"
-                if check_key in self.delete_pending:
-                    colors[check_key] = f"{base_style} bg-yellow-500"
-                elif check_key in self.db_checks:
-                    color_class = HITO_COLORS.get(m, "bg-blue-500")
-                    colors[check_key] = f"{base_style} {color_class}"
-                elif check_key in self.pending_checks:
-                    color_class = HITO_COLORS.get(m, "bg-blue-600")
-                    colors[check_key] = f"{base_style} {color_class} animate-pulse"
+                if k_internal in self.delete_pending:
+                    colors[k_frontend] = f"{base_style} bg-yellow-500"
+                elif k_internal in self.db_checks:
+                    color_class = HITO_COLORS_BY_IDX.get(i, "bg-blue-500")
+                    colors[k_frontend] = f"{base_style} {color_class}"
+                elif k_internal in self.pending_checks:
+                    color_class = HITO_COLORS_BY_IDX.get(i, "bg-blue-600")
+                    colors[k_frontend] = f"{base_style} {color_class} animate-pulse"
                 else:
-                    colors[check_key] = empty_style
+                    colors[k_frontend] = empty_style
         return colors
 
     @rx.event

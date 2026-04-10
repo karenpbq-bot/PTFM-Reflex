@@ -4,10 +4,8 @@ from app.states.seguimiento_state import SeguimientoState, SeguimientoProduct
 from app.states.login_state import LoginState
 
 
-def milestone_cell(
-    product: SeguimientoProduct, idx: int, hito_name: str
-) -> rx.Component:
-    check_key = product["id"].to_string() + "_" + hito_name
+def milestone_cell(product: SeguimientoProduct, idx: int) -> rx.Component:
+    check_key = f"{product['id'].to_string()}_{idx}"
     cell_status = SeguimientoState.cell_statuses.get(check_key, "empty")
     return rx.el.td(
         rx.el.button(
@@ -48,14 +46,14 @@ def product_row(product: SeguimientoProduct) -> rx.Component:
             product["ml"].to_string(),
             class_name="px-4 py-3 text-sm text-gray-600 border-b border-gray-100 whitespace-nowrap text-right",
         ),
-        milestone_cell(product, 0, "Diseñado"),
-        milestone_cell(product, 1, "Fabricado"),
-        milestone_cell(product, 2, "Material en Obra"),
-        milestone_cell(product, 3, "Material en Ubicación"),
-        milestone_cell(product, 4, "Instalación de Estructura"),
-        milestone_cell(product, 5, "Instalación de Puertas o Frentes"),
-        milestone_cell(product, 6, "Revisión y Observaciones"),
-        milestone_cell(product, 7, "Entrega"),
+        milestone_cell(product, 0),
+        milestone_cell(product, 1),
+        milestone_cell(product, 2),
+        milestone_cell(product, 3),
+        milestone_cell(product, 4),
+        milestone_cell(product, 5),
+        milestone_cell(product, 6),
+        milestone_cell(product, 7),
         rx.el.td(
             rx.el.input(
                 default_value=SeguimientoState.product_notes.get(
