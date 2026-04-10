@@ -69,9 +69,9 @@ class SeguimientoState(rx.State):
     def is_jefe(self) -> bool:
         return self.current_user_role.lower() in ["admin", "administrador", "gerente"]
 
-    @rx.var
+    @rx.event
     def is_supervisor_only(self) -> bool:
-        return not self.is_jefe
+        return ~SeguimientoState.is_jefe
 
     @rx.event
     def set_search_text(self, val: str):

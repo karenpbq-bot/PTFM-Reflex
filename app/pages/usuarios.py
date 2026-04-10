@@ -228,7 +228,8 @@ def usuarios_page() -> rx.Component:
             ),
             rx.cond(
                 (LoginState.user_role.lower() == "admin")
-                | (LoginState.user_role.lower() == "administrador"),
+                | (LoginState.user_role.lower() == "administrador")
+                | (LoginState.user_role.lower() == "gerente"),
                 rx.el.div(
                     section_title("Registrar Colaborador", "user-plus"),
                     rx.el.form(

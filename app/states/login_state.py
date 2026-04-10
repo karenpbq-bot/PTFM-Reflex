@@ -23,6 +23,10 @@ class LoginState(rx.State):
         """Simplified login handler to prevent React DOM update race conditions during redirect."""
         self.is_loading = True
         self.error_message = ""
+        self.is_authenticated = False
+        self.user_role = ""
+        self.user_id = 0
+        self.user_full_name = ""
         try:
             user = form_data.get("username", "").strip()
             pwd = form_data.get("password", "")
@@ -33,10 +37,10 @@ class LoginState(rx.State):
             res = validar_usuario(user, pwd)
             if res:
                 self.is_authenticated = True
-                self.user_role = res.get("rol", "")
-                self.user_id = res.get("id", 0)
-                self.user_full_name = res.get(
-                    "nombre_completo", res.get("nombre_usuario", "")
+                self.user_role = str(res.get("rol", ""))
+                self.user_id = int(res.get("id", 0))
+                self.user_full_name = str(
+                    res.get("nombre_completo", res.get("nombre_usuario", ""))
                 )
                 self.error_message = ""
                 self.is_loading = False
