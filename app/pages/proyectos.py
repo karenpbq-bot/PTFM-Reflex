@@ -199,6 +199,7 @@ def tab_registro() -> rx.Component:
                     "La suma de los porcentajes debe ser exactamente 100%.",
                     class_name="text-sm font-bold text-red-500 mb-4",
                 ),
+                rx.fragment(),
             ),
             rx.el.div(
                 stage_input("Diseño", "pct_diseno"),
@@ -256,6 +257,7 @@ def tab_registro() -> rx.Component:
                     ProyectosState.reg_error,
                     class_name="text-sm font-bold text-red-500 mt-4",
                 ),
+                rx.fragment(),
             ),
             rx.cond(
                 ProyectosState.reg_message != "",
@@ -263,6 +265,7 @@ def tab_registro() -> rx.Component:
                     ProyectosState.reg_message,
                     class_name="text-sm font-bold text-green-600 mt-4 bg-green-50 p-3 rounded-lg border border-green-100",
                 ),
+                rx.fragment(),
             ),
             rx.el.div(
                 rx.el.button(
@@ -452,6 +455,7 @@ def tab_matriz() -> rx.Component:
                         ProyectosState.matriz_error,
                         class_name="text-sm font-bold text-red-500 mb-4",
                     ),
+                    rx.fragment(),
                 ),
                 rx.cond(
                     ProyectosState.matriz_message != "",
@@ -459,6 +463,7 @@ def tab_matriz() -> rx.Component:
                         ProyectosState.matriz_message,
                         class_name="text-sm font-bold text-green-600 mb-4 bg-green-50 p-3 rounded-lg border border-green-100",
                     ),
+                    rx.fragment(),
                 ),
                 rx.el.div(
                     rx.el.div(
@@ -639,6 +644,7 @@ def tab_gestion() -> rx.Component:
                             ProyectosState.edit_error,
                             class_name="text-sm font-bold text-red-500 mb-4",
                         ),
+                        rx.fragment(),
                     ),
                     rx.cond(
                         ProyectosState.edit_message != "",
@@ -646,6 +652,7 @@ def tab_gestion() -> rx.Component:
                             ProyectosState.edit_message,
                             class_name="text-sm font-bold text-green-600 mb-4 bg-green-50 p-3 rounded-lg border border-green-100",
                         ),
+                        rx.fragment(),
                     ),
                     rx.el.div(
                         rx.el.button(

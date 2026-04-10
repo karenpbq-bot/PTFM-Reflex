@@ -139,7 +139,7 @@ def edit_modal() -> rx.Component:
             ),
             class_name="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4",
         ),
-        None,
+        rx.fragment(),
     )
 
 
@@ -203,6 +203,7 @@ def usuarios_page() -> rx.Component:
                                     UsuariosState.password_error,
                                     class_name="text-red-500 text-xs mb-3 font-bold",
                                 ),
+                                rx.fragment(),
                             ),
                             rx.cond(
                                 UsuariosState.password_success != "",
@@ -210,6 +211,7 @@ def usuarios_page() -> rx.Component:
                                     UsuariosState.password_success,
                                     class_name="text-green-500 text-xs mb-3 font-bold",
                                 ),
+                                rx.fragment(),
                             ),
                             rx.el.button(
                                 "Actualizar Seguridad",
@@ -293,6 +295,7 @@ def usuarios_page() -> rx.Component:
                                 UsuariosState.create_error,
                                 class_name="text-red-500 text-xs mb-4 font-bold",
                             ),
+                            rx.fragment(),
                         ),
                         rx.cond(
                             UsuariosState.create_success != "",
@@ -300,6 +303,7 @@ def usuarios_page() -> rx.Component:
                                 UsuariosState.create_success,
                                 class_name="text-green-500 text-xs mb-4 font-bold",
                             ),
+                            rx.fragment(),
                         ),
                         rx.el.button(
                             "Crear Usuario",

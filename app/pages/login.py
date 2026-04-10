@@ -81,7 +81,7 @@ def login_page() -> rx.Component:
                             ),
                             class_name="flex items-center gap-2 bg-red-50 text-red-500 p-3 rounded-xl mb-6 border border-red-100",
                         ),
-                        None,
+                        rx.fragment(),
                     ),
                     rx.el.button(
                         rx.cond(

@@ -19,7 +19,7 @@ def milestone_cell(
                     rx.cond(
                         SeguimientoState.pending_checks.contains(check_key),
                         rx.icon("check", class_name="h-4 w-4 text-white"),
-                        None,
+                        rx.fragment(),
                     ),
                 ),
             ),
