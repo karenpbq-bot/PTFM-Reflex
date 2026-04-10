@@ -42,7 +42,9 @@ class LoginState(rx.State):
                 self.is_loading = False
                 yield rx.redirect("/")
             else:
-                self.error_message = "Usuario o contraseña incorrectos."
+                self.error_message = (
+                    "Credenciales inválidas. Verifique mayúsculas y minúsculas."
+                )
                 self.is_loading = False
         except Exception as e:
             logging.exception(f"Error al iniciar sesión: {e}")

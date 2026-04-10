@@ -31,7 +31,7 @@ def login_page() -> rx.Component:
                             ),
                             rx.el.input(
                                 name="username",
-                                placeholder="Ej: kbarrientos",
+                                placeholder="Ej: Kbarrientos",
                                 required=True,
                                 class_name="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50/50",
                             ),

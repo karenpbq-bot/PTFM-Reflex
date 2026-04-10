@@ -19,26 +19,25 @@ def fetch_all_paginated(query_builder, batch_size=1000):
 
 
 def conectar():
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-    if not url or not key:
-        logging.warning("SUPABASE_URL or SUPABASE_KEY not set.")
-    return create_client(url, key) if url and key else None
+    url = os.environ.get("SUPABASE_URL", "https://afolglqvixpejyisgmin.supabase.co")
+    key = os.environ.get(
+        "SUPABASE_KEY",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmb2xnbHF2aXhwZWp5aXNnbWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MzIyNjksImV4cCI6MjA4OTAwODI2OX0.0-tmQ0pwP4XPEDnG-3tDdRMrLz407n69jShxrmMWaaA",
+    )
+    return create_client(url, key)
 
 
 def validar_usuario(usuario: str, clave: str):
     """
     Validates user credentials.
-    Username lookup is case-insensitive (ilike), but password comparison is done in Python (case-sensitive).
+    Both username and password are strictly case-sensitive.
     """
     try:
         supabase = conectar()
-        if not supabase:
-            return None
         res = (
             supabase.table("usuarios")
             .select("*")
-            .ilike("nombre_usuario", usuario)
+            .eq("nombre_usuario", usuario)
             .execute()
         )
         if res.data:
