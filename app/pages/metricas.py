@@ -280,10 +280,7 @@ def metricas_page() -> rx.Component:
                         rx.el.div(
                             rx.el.div(
                                 rx.el.div(
-                                    rx.el.h3(
-                                        "Gantt Comparativo de Doble Capa",
-                                        class_name="text-lg font-bold",
-                                    ),
+                                    rx.el.h3("Gantt", class_name="text-lg font-bold"),
                                     rx.el.div(
                                         rx.el.div(
                                             rx.el.div(
@@ -330,7 +327,7 @@ def metricas_page() -> rx.Component:
                                     class_name="flex justify-between items-center mb-6",
                                 ),
                                 rx.html(MetricasState.gantt_html),
-                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-2 min-h-[500px] overflow-auto",
+                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-3 min-h-[500px] overflow-auto",
                             ),
                             rx.el.div(
                                 rx.el.h3(
@@ -343,9 +340,9 @@ def metricas_page() -> rx.Component:
                                     ),
                                     class_name="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2",
                                 ),
-                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
+                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-1",
                             ),
-                            class_name="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8",
+                            class_name="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8",
                         )
                     ),
                     value="gantt",

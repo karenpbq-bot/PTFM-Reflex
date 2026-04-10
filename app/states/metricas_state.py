@@ -183,17 +183,16 @@ class MetricasState(rx.State):
             new_stage_progress = []
             new_milestone_detail = []
             new_health = []
-            y_order = []
-            for proj in selected_p:
-                p_nom_short = proj["display"][:20]
-                for stage in STAGE_MAPPING.keys():
-                    if self.show_planned_bars:
-                        y_order.append(f"{p_nom_short} - {stage} (Plan)")
-                    y_order.append(f"{p_nom_short} - {stage} (Ejec)")
-            for proj in selected_p:
+            y_pos = 0
+            y_order_vals = []
+            y_order_text = []
+            project_separators = []
+            for proj_idx, proj in enumerate(selected_p):
+                if proj_idx > 0:
+                    project_separators.append(y_pos - 0.5)
+                first_y_of_project = y_pos
                 p_id = int(proj["id"])
                 p_nom = proj["display"]
-                p_nom_short = proj["display"][:20]
                 p_prods = prods_df[prods_df["proyecto_id"] == p_id]
                 total_prods = len(p_prods)
                 p_segs = (
@@ -216,8 +215,16 @@ class MetricasState(rx.State):
                     milestone_row[f"{m}_val"] = pct_val
                 new_milestone_detail.append(milestone_row)
                 for stage, hitos in STAGE_MAPPING.items():
-                    y_plan = f"{p_nom_short} - {stage} (Plan)"
-                    y_exec = f"{p_nom_short} - {stage} (Ejec)"
+                    y_plan_pos = -1
+                    if self.show_planned_bars:
+                        y_plan_pos = y_pos
+                        y_order_vals.append(y_pos)
+                        y_order_text.append(stage)
+                        y_pos += 1
+                    y_exec_pos = y_pos
+                    y_order_vals.append(y_pos)
+                    y_order_text.append(stage)
+                    y_pos += 1
                     c_total = (
                         sum((len(p_segs[p_segs["hito"] == h]) for h in hitos))
                         if not p_segs.empty
@@ -247,7 +254,7 @@ class MetricasState(rx.State):
                         "Instalación": "p_ins",
                         "Entrega": "p_ent",
                     }[stage]
-                    if self.show_planned_bars:
+                    if self.show_planned_bars and y_plan_pos != -1:
                         start_s = proj.get(f"{map_prefix}_i")
                         end_s = proj.get(f"{map_prefix}_f")
                         if start_s and end_s:
@@ -259,7 +266,7 @@ class MetricasState(rx.State):
                                 duration_ms = (e_dt - s_dt).total_seconds() * 1000
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_plan],
+                                        y=[y_plan_pos],
                                         x=[duration_ms],
                                         base=[s_dt.isoformat()],
                                         orientation="h",
@@ -269,7 +276,7 @@ class MetricasState(rx.State):
                                         opacity=0.6,
                                         hoverinfo="text",
                                         hovertext=f"Plan {stage}: {start_s} a {end_s}",
-                                        width=0.25,
+                                        width=0.6,
                                     )
                                 )
                             except Exception:
@@ -301,7 +308,7 @@ class MetricasState(rx.State):
                                 )
                                 fig.add_trace(
                                     go.Bar(
-                                        y=[y_exec],
+                                        y=[y_exec_pos],
                                         x=[duration_ms],
                                         base=[min_date.isoformat()],
                                         orientation="h",
@@ -310,7 +317,7 @@ class MetricasState(rx.State):
                                         showlegend=False,
                                         hoverinfo="text",
                                         hovertext=f"{stage}: {pct}% ({min_date.strftime('%d/%m/%Y')} - {max_date.strftime('%d/%m/%Y')})",
-                                        width=0.25,
+                                        width=0.6,
                                     )
                                 )
                         except Exception:
@@ -334,10 +341,28 @@ class MetricasState(rx.State):
                         "detail": f"{int(proj_avg)}% - {detail}",
                     }
                 )
-            dynamic_height = max(500, len(selected_p) * 10 * 28 + 100)
+                fig.add_annotation(
+                    text=f"<b>{proj['display'][:40]}</b>",
+                    xref="paper",
+                    x=0,
+                    yref="y",
+                    y=first_y_of_project - 0.5,
+                    xanchor="left",
+                    yanchor="bottom",
+                    showarrow=False,
+                    font=dict(size=11, color="#1e40af", family="Inter, sans-serif"),
+                    bgcolor="rgba(239,246,255,0.8)",
+                    borderpad=3,
+                )
+            for sep_y in project_separators:
+                fig.add_hline(
+                    y=sep_y, line_dash="dot", line_color="#d1d5db", line_width=1
+                )
+            dynamic_height = max(400, y_pos * 24 + 80)
             fig.update_layout(
                 barmode="group",
-                bargap=0.1,
+                bargap=0.05,
+                bargroupgap=0.02,
                 height=dynamic_height,
                 margin=dict(l=10, r=10, t=30, b=20),
                 xaxis=dict(type="date", title=""),
@@ -345,8 +370,8 @@ class MetricasState(rx.State):
                     title="",
                     autorange="reversed",
                     tickfont=dict(size=10),
-                    categoryorder="array",
-                    categoryarray=y_order,
+                    tickvals=y_order_vals,
+                    ticktext=y_order_text,
                 ),
                 plot_bgcolor="white",
                 paper_bgcolor="white",
