@@ -6,35 +6,49 @@ def login_page() -> rx.Component:
     return rx.el.div(
         rx.el.div(
             rx.el.div(
-                rx.icon("box", class_name="h-12 w-12 text-blue-600 mx-auto mb-4"),
+                rx.el.div(
+                    rx.icon("box", class_name="h-16 w-16 text-blue-600 mb-2"),
+                    class_name="flex justify-center mb-4 animate-bounce",
+                ),
                 rx.el.h2(
                     "PRACTIFORMAS",
-                    class_name="text-2xl font-bold text-center text-gray-900",
+                    class_name="text-3xl font-black text-center text-gray-900 tracking-tight",
                 ),
                 rx.el.p(
                     "Seguimiento y Control de Proyecto",
-                    class_name="text-center text-gray-500 mb-8",
+                    class_name="text-center text-gray-500 mb-10 font-medium",
                 ),
                 rx.el.form(
                     rx.el.div(
                         rx.el.label(
-                            "Usuario",
-                            class_name="block text-sm font-medium text-gray-700 mb-1",
+                            "Nombre de Usuario",
+                            class_name="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1",
                         ),
-                        rx.el.input(
-                            name="username",
-                            placeholder="Ej: admin",
-                            required=True,
-                            class_name="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                        rx.el.div(
+                            rx.icon(
+                                "user",
+                                class_name="absolute left-3 top-3 h-4 w-4 text-gray-400",
+                            ),
+                            rx.el.input(
+                                name="username",
+                                placeholder="Ej: kbarrientos",
+                                required=True,
+                                class_name="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50/50",
+                            ),
+                            class_name="relative",
                         ),
-                        class_name="mb-4",
+                        class_name="mb-5",
                     ),
                     rx.el.div(
                         rx.el.label(
                             "Contraseña",
-                            class_name="block text-sm font-medium text-gray-700 mb-1",
+                            class_name="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1",
                         ),
                         rx.el.div(
+                            rx.icon(
+                                "lock",
+                                class_name="absolute left-3 top-3 h-4 w-4 text-gray-400",
+                            ),
                             rx.el.input(
                                 name="password",
                                 type=rx.cond(
@@ -42,7 +56,7 @@ def login_page() -> rx.Component:
                                 ),
                                 placeholder="••••••••",
                                 required=True,
-                                class_name="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                                class_name="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none bg-gray-50/50",
                             ),
                             rx.el.button(
                                 rx.cond(
@@ -52,31 +66,53 @@ def login_page() -> rx.Component:
                                 ),
                                 on_click=LoginState.toggle_password_visibility,
                                 type="button",
-                                class_name="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 focus:outline-none",
+                                class_name="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors",
                             ),
                             class_name="relative",
                         ),
-                        class_name="mb-6",
+                        class_name="mb-8",
                     ),
                     rx.cond(
                         LoginState.error_message != "",
-                        rx.el.p(
-                            LoginState.error_message,
-                            class_name="text-red-500 text-sm mb-4 text-center font-medium",
+                        rx.el.div(
+                            rx.icon("circle-alert", class_name="h-4 w-4"),
+                            rx.el.p(
+                                LoginState.error_message, class_name="text-sm font-bold"
+                            ),
+                            class_name="flex items-center gap-2 bg-red-50 text-red-500 p-3 rounded-xl mb-6 border border-red-100",
                         ),
-                        rx.el.p("", class_name="hidden"),
+                        None,
                     ),
                     rx.el.button(
-                        "Iniciar Sesión",
+                        rx.cond(
+                            LoginState.is_loading,
+                            rx.el.div(
+                                rx.icon("loader", class_name="h-5 w-5 animate-spin"),
+                                "Verificando...",
+                                class_name="flex items-center gap-2",
+                            ),
+                            "Ingresar al Sistema",
+                        ),
                         type="submit",
-                        class_name="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors",
+                        disabled=LoginState.is_loading,
+                        class_name="w-full bg-blue-600 text-white font-black py-3 px-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 disabled:opacity-50",
                     ),
                     on_submit=LoginState.login,
                     reset_on_submit=False,
                 ),
-                class_name="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-gray-100",
+                rx.el.div(
+                    rx.el.p(
+                        "v2.1.0",
+                        class_name="text-[10px] text-gray-300 font-bold uppercase tracking-widest mt-12 text-center",
+                    )
+                ),
+                class_name="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-gray-100 transform transition-all duration-500 hover:scale-[1.01]",
             ),
-            class_name="flex items-center justify-center min-h-screen w-full",
+            class_name="flex items-center justify-center min-h-screen w-full px-4",
         ),
-        class_name="min-h-screen bg-gray-50 font-['Inter']",
+        class_name="min-h-screen bg-gray-50 font-['Inter'] relative overflow-hidden",
+        style={
+            "backgroundImage": "radial-gradient(circle at 2px 2px, rgba(0,0,0,0.02) 1px, transparent 0)",
+            "backgroundSize": "24px 24px",
+        },
     )

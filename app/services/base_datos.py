@@ -22,11 +22,15 @@ def conectar():
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     if not url or not key:
-        print("Warning: SUPABASE_URL or SUPABASE_KEY not set.")
+        logging.warning("SUPABASE_URL or SUPABASE_KEY not set.")
     return create_client(url, key) if url and key else None
 
 
-def validar_usuario(usuario, clave):
+def validar_usuario(usuario: str, clave: str):
+    """
+    Validates user credentials.
+    Username lookup is case-insensitive (ilike), but password comparison is done in Python (case-sensitive).
+    """
     try:
         supabase = conectar()
         if not supabase:
@@ -34,14 +38,16 @@ def validar_usuario(usuario, clave):
         res = (
             supabase.table("usuarios")
             .select("*")
-            .eq("nombre_usuario", usuario)
-            .eq("contrasena", clave)
+            .ilike("nombre_usuario", usuario)
             .execute()
         )
-        return res.data[0] if res.data else None
+        if res.data:
+            for user_record in res.data:
+                if user_record.get("contrasena") == clave:
+                    return user_record
+        return None
     except Exception as e:
-        logging.exception("Unexpected error")
-        print(f"Error: {e}")
+        logging.exception(f"Error in validar_usuario: {e}")
         return None
 
 

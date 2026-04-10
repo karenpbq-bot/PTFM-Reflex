@@ -12,16 +12,24 @@ class LoginState(rx.State):
     user_id: int = 0
     user_full_name: str = ""
     error_message: str = ""
+    is_loading: bool = False
 
     @rx.event
     def toggle_password_visibility(self):
         self.show_password = not self.show_password
 
     @rx.event
-    def login(self, form_data: dict):
+    async def login(self, form_data: dict):
+        self.is_loading = True
+        self.error_message = ""
+        yield
         try:
-            user = form_data.get("username", "")
+            user = form_data.get("username", "").strip()
             pwd = form_data.get("password", "")
+            if not user or not pwd:
+                self.error_message = "Por favor ingrese usuario y contraseña."
+                self.is_loading = False
+                return
             res = validar_usuario(user, pwd)
             if res:
                 self.is_authenticated = True
@@ -31,12 +39,15 @@ class LoginState(rx.State):
                     "nombre_completo", res.get("nombre_usuario", "")
                 )
                 self.error_message = ""
-                return rx.redirect("/")
+                self.is_loading = False
+                yield rx.redirect("/")
             else:
                 self.error_message = "Usuario o contraseña incorrectos."
+                self.is_loading = False
         except Exception as e:
             logging.exception(f"Error al iniciar sesión: {e}")
             self.error_message = "Error del servidor al intentar iniciar sesión."
+            self.is_loading = False
 
     @rx.event
     def logout(self):
@@ -46,6 +57,7 @@ class LoginState(rx.State):
         self.user_full_name = ""
         self.username = ""
         self.password = ""
+        self.error_message = ""
         return rx.redirect("/login")
 
     @rx.var
