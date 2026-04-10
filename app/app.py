@@ -13,6 +13,7 @@ def index() -> rx.Component:
 app = rx.App(
     theme=rx.theme(appearance="light"),
     head_components=[
+        rx.el.script(src="https://cdn.plot.ly/plotly-3.4.0.min.js"),
         rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
         rx.el.link(rel="preconnect", href="https://fonts.gstatic.com", cross_origin=""),
         rx.el.link(

@@ -3,18 +3,6 @@ from app.components.navigation import layout
 from app.states.metricas_state import MetricasState
 
 
-def kpi_card(label: str, value: str, icon: str) -> rx.Component:
-    return rx.el.div(
-        rx.el.div(
-            rx.el.p(label, class_name="text-sm text-gray-500 font-medium"),
-            rx.el.p(value, class_name="text-3xl font-bold text-gray-900 mt-1"),
-            class_name="flex-1",
-        ),
-        rx.icon(icon, class_name="h-8 w-8 text-blue-100"),
-        class_name="flex items-start p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
-    )
-
-
 def project_checkbox(proj: dict) -> rx.Component:
     return rx.el.label(
         rx.el.input(
@@ -178,264 +166,315 @@ def milestone_row(item: dict) -> rx.Component:
 def metricas_page() -> rx.Component:
     return layout(
         rx.el.div(
-            rx.el.div(
-                rx.el.h3(
-                    "Selección de Proyectos para Análisis",
-                    class_name="text-lg font-bold text-gray-800 mb-4",
-                ),
-                rx.el.div(
-                    rx.el.div(
-                        rx.el.input(
-                            placeholder="Filtrar proyectos...",
-                            on_change=MetricasState.set_search_text.debounce(500),
-                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm",
+            rx.radix.tabs.root(
+                rx.radix.tabs.list(
+                    rx.radix.tabs.trigger(
+                        rx.el.span(
+                            "📊 Gantt Comparativo", class_name="flex items-center gap-2"
                         ),
-                        rx.el.select(
-                            rx.el.option("Todos los supervisores", value=""),
-                            rx.foreach(
-                                MetricasState.supervisores_list,
-                                lambda s: rx.el.option(s["nombre"], value=s["id"]),
-                            ),
-                            on_change=MetricasState.set_filter_responsible,
-                            class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none text-sm",
-                        ),
-                        class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4",
+                        value="gantt",
+                        class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
                     ),
+                    rx.radix.tabs.trigger(
+                        rx.el.span(
+                            "📋 Tablas y Exportación",
+                            class_name="flex items-center gap-2",
+                        ),
+                        value="tablas",
+                        class_name="px-4 py-2 font-semibold text-gray-600 hover:text-blue-600 data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 outline-none",
+                    ),
+                    class_name="flex gap-4 border-b border-gray-200 mb-6",
+                ),
+                rx.radix.tabs.content(
                     rx.el.div(
                         rx.el.div(
-                            rx.el.button(
-                                "Seleccionar Todos",
-                                on_click=MetricasState.select_all_projects,
-                                class_name="text-sm text-blue-600 hover:text-blue-800 font-medium",
+                            rx.el.h3(
+                                "Selección de Proyectos para Análisis",
+                                class_name="text-lg font-bold text-gray-800 mb-4",
                             ),
-                            rx.el.span("|", class_name="mx-2 text-gray-300"),
-                            rx.el.button(
-                                "Deseleccionar",
-                                on_click=MetricasState.deselect_all_projects,
-                                class_name="text-sm text-gray-500 hover:text-gray-700 font-medium",
+                            rx.el.div(
+                                rx.el.div(
+                                    rx.el.input(
+                                        placeholder="Filtrar proyectos...",
+                                        on_change=MetricasState.set_search_text.debounce(
+                                            500
+                                        ),
+                                        class_name="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm",
+                                    ),
+                                    rx.el.select(
+                                        rx.el.option(
+                                            "Todos los supervisores", value=""
+                                        ),
+                                        rx.foreach(
+                                            MetricasState.supervisores_list,
+                                            lambda s: rx.el.option(
+                                                s["nombre"], value=s["id"]
+                                            ),
+                                        ),
+                                        on_change=MetricasState.set_filter_responsible,
+                                        class_name="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white appearance-none text-sm",
+                                    ),
+                                    class_name="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4",
+                                ),
+                                rx.el.div(
+                                    rx.el.div(
+                                        rx.el.button(
+                                            "Seleccionar Todos",
+                                            on_click=MetricasState.select_all_projects,
+                                            class_name="text-sm text-blue-600 hover:text-blue-800 font-medium",
+                                        ),
+                                        rx.el.span(
+                                            "|", class_name="mx-2 text-gray-300"
+                                        ),
+                                        rx.el.button(
+                                            "Deseleccionar",
+                                            on_click=MetricasState.deselect_all_projects,
+                                            class_name="text-sm text-gray-500 hover:text-gray-700 font-medium",
+                                        ),
+                                        class_name="flex items-center",
+                                    ),
+                                    rx.el.label(
+                                        rx.el.input(
+                                            type="checkbox",
+                                            checked=MetricasState.show_planned_bars,
+                                            on_change=MetricasState.toggle_planned_bars,
+                                            class_name="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
+                                        ),
+                                        rx.el.span(
+                                            "Mostrar Planificado (Celeste)",
+                                            class_name="text-sm font-medium text-gray-700",
+                                        ),
+                                        class_name="flex items-center cursor-pointer",
+                                    ),
+                                    class_name="flex justify-between items-center mb-2",
+                                ),
+                                rx.el.div(
+                                    rx.foreach(
+                                        MetricasState.filtered_projects_list,
+                                        project_checkbox,
+                                    ),
+                                    class_name="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50/50",
+                                ),
+                                class_name="flex flex-col",
                             ),
-                            class_name="flex items-center",
-                        ),
-                        rx.el.label(
-                            rx.el.input(
-                                type="checkbox",
-                                checked=MetricasState.show_planned_bars,
-                                on_change=MetricasState.toggle_planned_bars,
-                                class_name="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500",
-                            ),
-                            rx.el.span(
-                                "Mostrar Planificado (Celeste)",
-                                class_name="text-sm font-medium text-gray-700",
-                            ),
-                            class_name="flex items-center cursor-pointer",
-                        ),
-                        class_name="flex justify-between items-center mb-2",
-                    ),
-                    rx.el.div(
-                        rx.foreach(
-                            MetricasState.filtered_projects_list, project_checkbox
-                        ),
-                        class_name="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-100 p-2 rounded-xl bg-gray-50/50",
-                    ),
-                    class_name="flex flex-col",
-                ),
-                class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
-            ),
-            rx.el.div(
-                kpi_card(
-                    "Presupuesto (Uso Estimado)",
-                    MetricasState.budget_utilization,
-                    "banknote",
-                ),
-                kpi_card(
-                    "Cronograma (Adherencia)",
-                    MetricasState.timeline_adherence,
-                    "calendar-check",
-                ),
-                kpi_card(
-                    "Recursos (Asignación)", MetricasState.resource_allocation, "users"
-                ),
-                class_name="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8",
-            ),
-            rx.el.div(
-                rx.el.div(
-                    rx.el.div(
-                        rx.el.h3(
-                            "Gantt Comparativo de Doble Capa",
-                            class_name="text-lg font-bold",
+                            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
                         ),
                         rx.el.div(
                             rx.el.div(
                                 rx.el.div(
-                                    class_name="w-3 h-3 rounded-full bg-[#87CEEB] mr-1"
+                                    rx.el.h3(
+                                        "Gantt Comparativo de Doble Capa",
+                                        class_name="text-lg font-bold",
+                                    ),
+                                    rx.el.div(
+                                        rx.el.div(
+                                            rx.el.div(
+                                                class_name="w-3 h-3 rounded-full bg-[#87CEEB] mr-1"
+                                            ),
+                                            rx.el.span(
+                                                "Planificado",
+                                                class_name="text-xs text-gray-500",
+                                            ),
+                                            class_name="flex items-center mr-3",
+                                        ),
+                                        rx.el.div(
+                                            rx.el.div(
+                                                class_name="w-3 h-3 rounded-full bg-[#22c55e] mr-1"
+                                            ),
+                                            rx.el.span(
+                                                ">75%",
+                                                class_name="text-xs text-gray-500",
+                                            ),
+                                            class_name="flex items-center mr-3",
+                                        ),
+                                        rx.el.div(
+                                            rx.el.div(
+                                                class_name="w-3 h-3 rounded-full bg-[#f59e0b] mr-1"
+                                            ),
+                                            rx.el.span(
+                                                "50-75%",
+                                                class_name="text-xs text-gray-500",
+                                            ),
+                                            class_name="flex items-center mr-3",
+                                        ),
+                                        rx.el.div(
+                                            rx.el.div(
+                                                class_name="w-3 h-3 rounded-full bg-[#ef4444] mr-1"
+                                            ),
+                                            rx.el.span(
+                                                "<50%",
+                                                class_name="text-xs text-gray-500",
+                                            ),
+                                            class_name="flex items-center",
+                                        ),
+                                        class_name="flex items-center",
+                                    ),
+                                    class_name="flex justify-between items-center mb-6",
                                 ),
-                                rx.el.span(
-                                    "Planificado", class_name="text-xs text-gray-500"
-                                ),
-                                class_name="flex items-center mr-3",
+                                rx.html(MetricasState.gantt_html),
+                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-2 min-h-[500px] overflow-auto",
                             ),
                             rx.el.div(
+                                rx.el.h3(
+                                    "Salud de Gestión",
+                                    class_name="text-lg font-bold mb-6",
+                                ),
                                 rx.el.div(
-                                    class_name="w-3 h-3 rounded-full bg-[#22c55e] mr-1"
+                                    rx.foreach(
+                                        MetricasState.health_indicators, health_card
+                                    ),
+                                    class_name="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2",
                                 ),
-                                rx.el.span(">75%", class_name="text-xs text-gray-500"),
-                                class_name="flex items-center mr-3",
+                                class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
                             ),
-                            rx.el.div(
-                                rx.el.div(
-                                    class_name="w-3 h-3 rounded-full bg-[#f59e0b] mr-1"
-                                ),
-                                rx.el.span(
-                                    "50-75%", class_name="text-xs text-gray-500"
-                                ),
-                                class_name="flex items-center mr-3",
-                            ),
-                            rx.el.div(
-                                rx.el.div(
-                                    class_name="w-3 h-3 rounded-full bg-[#ef4444] mr-1"
-                                ),
-                                rx.el.span("<50%", class_name="text-xs text-gray-500"),
-                                class_name="flex items-center",
-                            ),
-                            class_name="flex items-center",
+                            class_name="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8",
                         ),
-                        class_name="flex justify-between items-center mb-6",
                     ),
-                    rx.html(MetricasState.gantt_html),
-                    class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm lg:col-span-2 min-h-[400px]",
+                    value="gantt",
+                    class_name="outline-none",
                 ),
-                rx.el.div(
-                    rx.el.h3("Salud de Gestión", class_name="text-lg font-bold mb-6"),
+                rx.radix.tabs.content(
                     rx.el.div(
-                        rx.foreach(MetricasState.health_indicators, health_card),
-                        class_name="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2",
-                    ),
-                    class_name="p-6 bg-white rounded-2xl border border-gray-200 shadow-sm",
-                ),
-                class_name="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8",
-            ),
-            rx.el.div(
-                rx.el.h3("Avances por Etapa", class_name="text-lg font-bold mb-4"),
-                rx.el.div(
-                    rx.el.table(
-                        rx.el.thead(
-                            rx.el.tr(
-                                rx.el.th(
-                                    "Proyecto",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                        rx.el.div(
+                            rx.el.h3(
+                                "Avances por Etapa", class_name="text-lg font-bold mb-4"
+                            ),
+                            rx.el.div(
+                                rx.el.table(
+                                    rx.el.thead(
+                                        rx.el.tr(
+                                            rx.el.th(
+                                                "Proyecto",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Diseño",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Fabricación",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Traslado",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Instalación",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Entrega",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                        )
+                                    ),
+                                    rx.el.tbody(
+                                        rx.foreach(
+                                            MetricasState.stage_progress,
+                                            stage_progress_row,
+                                        )
+                                    ),
+                                    class_name="min-w-full table-auto border-separate border-spacing-0",
                                 ),
-                                rx.el.th(
-                                    "Diseño",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Fabricación",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Traslado",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Instalación",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Entrega",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                            )
+                                class_name="overflow-x-auto rounded-xl border border-gray-200",
+                            ),
+                            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
                         ),
-                        rx.el.tbody(
-                            rx.foreach(MetricasState.stage_progress, stage_progress_row)
+                        rx.el.div(
+                            rx.el.h3(
+                                "Detalle por Hito Individual",
+                                class_name="text-lg font-bold mb-4",
+                            ),
+                            rx.el.div(
+                                rx.el.table(
+                                    rx.el.thead(
+                                        rx.el.tr(
+                                            rx.el.th(
+                                                "Proyecto",
+                                                class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Diseñado",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Fabricado",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Material en Obra",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Material en Ubicación",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Inst. Estructura",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Inst. Puertas",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Revisión",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                            rx.el.th(
+                                                "Entrega",
+                                                class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                            ),
+                                        )
+                                    ),
+                                    rx.el.tbody(
+                                        rx.foreach(
+                                            MetricasState.milestone_detail,
+                                            milestone_row,
+                                        )
+                                    ),
+                                    class_name="min-w-full table-auto border-separate border-spacing-0",
+                                ),
+                                class_name="overflow-x-auto rounded-xl border border-gray-200",
+                            ),
+                            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-6",
                         ),
-                        class_name="min-w-full table-auto border-separate border-spacing-0",
-                    ),
-                    class_name="overflow-x-auto rounded-xl border border-gray-200",
-                ),
-                class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-8",
-            ),
-            rx.el.div(
-                rx.el.h3(
-                    "Detalle por Hito Individual", class_name="text-lg font-bold mb-4"
-                ),
-                rx.el.div(
-                    rx.el.table(
-                        rx.el.thead(
-                            rx.el.tr(
-                                rx.el.th(
-                                    "Proyecto",
-                                    class_name="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                        rx.el.div(
+                            rx.el.h3(
+                                "Exportación de Resultados",
+                                class_name="text-lg font-bold mb-4",
+                            ),
+                            rx.el.div(
+                                rx.el.button(
+                                    rx.icon("download", class_name="w-4 h-4 mr-2"),
+                                    "Resumen Etapas (CSV)",
+                                    on_click=MetricasState.export_resumen_etapas,
+                                    class_name="flex items-center justify-center px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl transition-colors",
                                 ),
-                                rx.el.th(
-                                    "Diseñado",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                rx.el.button(
+                                    rx.icon("download", class_name="w-4 h-4 mr-2"),
+                                    "Detalle Hitos (CSV)",
+                                    on_click=MetricasState.export_detalle_hitos,
+                                    class_name="flex items-center justify-center px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl transition-colors",
                                 ),
-                                rx.el.th(
-                                    "Fabricado",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
+                                rx.el.button(
+                                    rx.icon(
+                                        "file-spreadsheet", class_name="w-4 h-4 mr-2"
+                                    ),
+                                    "Auditoría Piezas (0/1)",
+                                    on_click=MetricasState.export_auditoria,
+                                    class_name="flex items-center justify-center px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 font-bold rounded-xl transition-colors",
                                 ),
-                                rx.el.th(
-                                    "Material en Obra",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Material en Ubicación",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Inst. Estructura",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Inst. Puertas",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Revisión",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                                rx.el.th(
-                                    "Entrega",
-                                    class_name="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase bg-gray-50 border-b border-gray-200",
-                                ),
-                            )
+                                class_name="grid grid-cols-1 md:grid-cols-3 gap-4",
+                            ),
+                            class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm",
                         ),
-                        rx.el.tbody(
-                            rx.foreach(MetricasState.milestone_detail, milestone_row)
-                        ),
-                        class_name="min-w-full table-auto border-separate border-spacing-0",
                     ),
-                    class_name="overflow-x-auto rounded-xl border border-gray-200",
+                    value="tablas",
+                    class_name="outline-none",
                 ),
-                class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-8",
-            ),
-            rx.el.div(
-                rx.el.h3(
-                    "Exportación de Resultados", class_name="text-lg font-bold mb-4"
-                ),
-                rx.el.div(
-                    rx.el.button(
-                        rx.icon("download", class_name="w-4 h-4 mr-2"),
-                        "Resumen Etapas (CSV)",
-                        on_click=MetricasState.export_resumen_etapas,
-                        class_name="flex items-center justify-center px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl transition-colors",
-                    ),
-                    rx.el.button(
-                        rx.icon("download", class_name="w-4 h-4 mr-2"),
-                        "Detalle Hitos (CSV)",
-                        on_click=MetricasState.export_detalle_hitos,
-                        class_name="flex items-center justify-center px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl transition-colors",
-                    ),
-                    rx.el.button(
-                        rx.icon("file-spreadsheet", class_name="w-4 h-4 mr-2"),
-                        "Auditoría Piezas (0/1)",
-                        on_click=MetricasState.export_auditoria,
-                        class_name="flex items-center justify-center px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 font-bold rounded-xl transition-colors",
-                    ),
-                    class_name="grid grid-cols-1 md:grid-cols-3 gap-4",
-                ),
-                class_name="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-8",
+                default_value="gantt",
             ),
             class_name="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700",
         ),

@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import io
+import html as html_lib
 
 STAGE_MAPPING = {
     "Diseño": ["Diseñado"],
@@ -33,10 +34,7 @@ class MetricasState(rx.State):
     selected_projects: list[str] = []
     projects_list: list[dict[str, str | int | None]] = []
     supervisores_list: list[dict[str, str | int]] = []
-    gantt_html: str = ""
-    budget_utilization: str = "0%"
-    timeline_adherence: str = "0%"
-    resource_allocation: str = "0%"
+    gantt_html: str = '<div id="gantt-plotly-chart" style="width:100%;min-height:500px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">Seleccione proyectos para visualizar</div>'
     stage_progress: list[dict[str, str | int | float | bool]] = []
     milestone_detail: list[dict[str, str | int | float | bool]] = []
     health_indicators: list[dict[str, str]] = []
@@ -52,16 +50,16 @@ class MetricasState(rx.State):
         yield MetricasState.calculate_metrics
 
     @rx.event
-    def toggle_planned_bars(self, val: bool):
-        self.show_planned_bars = val
-        yield MetricasState.calculate_metrics
-
-    @rx.event
     def toggle_project(self, project_id: str):
         if project_id in self.selected_projects:
             self.selected_projects.remove(project_id)
         else:
             self.selected_projects.append(project_id)
+        yield MetricasState.calculate_metrics
+
+    @rx.event
+    def toggle_planned_bars(self, val: bool):
+        self.show_planned_bars = val
         yield MetricasState.calculate_metrics
 
     @rx.event
@@ -142,13 +140,10 @@ class MetricasState(rx.State):
     @rx.event
     def calculate_metrics(self):
         if not self.selected_projects:
-            self.gantt_html = ""
+            self.gantt_html = '<div id="gantt-plotly-chart" style="width:100%;min-height:500px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">Seleccione proyectos para visualizar</div>'
             self.health_indicators = []
             self.stage_progress = []
             self.milestone_detail = []
-            self.budget_utilization = "0%"
-            self.timeline_adherence = "0%"
-            self.resource_allocation = "0%"
             return
         try:
             supabase = conectar()
@@ -183,7 +178,6 @@ class MetricasState(rx.State):
             new_stage_progress = []
             new_milestone_detail = []
             new_health = []
-            total_avg = 0.0
             for proj in selected_p:
                 p_id = int(proj["id"])
                 p_nom = proj["display"]
@@ -227,14 +221,14 @@ class MetricasState(rx.State):
                         else "bg-red-500"
                     )
                     y_label = f"{p_nom[:15]} - {stage}"
+                    map_prefix = {
+                        "Diseño": "p_dis",
+                        "Fabricación": "p_fab",
+                        "Traslado": "p_tra",
+                        "Instalación": "p_ins",
+                        "Entrega": "p_ent",
+                    }[stage]
                     if self.show_planned_bars:
-                        map_prefix = {
-                            "Diseño": "p_dis",
-                            "Fabricación": "p_fab",
-                            "Traslado": "p_tra",
-                            "Instalación": "p_ins",
-                            "Entrega": "p_ent",
-                        }[stage]
                         start_s = proj.get(f"{map_prefix}_i")
                         end_s = proj.get(f"{map_prefix}_f")
                         if start_s and end_s:
@@ -248,7 +242,7 @@ class MetricasState(rx.State):
                                     go.Bar(
                                         y=[y_label],
                                         x=[duration_ms],
-                                        base=[s_dt],
+                                        base=[s_dt.isoformat()],
                                         orientation="h",
                                         marker_color="#87CEEB",
                                         name="Planificado",
@@ -259,15 +253,13 @@ class MetricasState(rx.State):
                                     )
                                 )
                             except Exception:
-                                logging.exception("Unexpected error")
-                    start_s = (
-                        proj.get(f"{map_prefix}_i") if self.show_planned_bars else None
-                    )
-                    if start_s and pct > 0:
+                                logging.exception("Error building planned bars")
+                    start_planned = proj.get(f"{map_prefix}_i")
+                    if start_planned and pct > 0:
                         try:
-                            s_dt = datetime.strptime(start_s, "%Y-%m-%d")
-                            end_s = proj.get(f"{map_prefix}_f")
-                            e_dt = datetime.strptime(end_s, "%Y-%m-%d")
+                            s_dt = datetime.strptime(start_planned, "%Y-%m-%d")
+                            end_planned = proj.get(f"{map_prefix}_f")
+                            e_dt = datetime.strptime(end_planned, "%Y-%m-%d")
                             if s_dt == e_dt:
                                 e_dt += timedelta(hours=23)
                             total_ms = (e_dt - s_dt).total_seconds() * 1000
@@ -283,7 +275,7 @@ class MetricasState(rx.State):
                                 go.Bar(
                                     y=[y_label],
                                     x=[actual_ms],
-                                    base=[s_dt],
+                                    base=[s_dt.isoformat()],
                                     orientation="h",
                                     marker_color=color,
                                     name="Real",
@@ -293,10 +285,9 @@ class MetricasState(rx.State):
                                 )
                             )
                         except Exception:
-                            logging.exception("Unexpected error")
+                            logging.exception("Error building actual bars")
                 new_stage_progress.append(stage_prog_row)
                 proj_avg = sum(stage_avgs) / len(stage_avgs) if stage_avgs else 0
-                total_avg += proj_avg
                 status = (
                     "Green" if proj_avg > 75 else "Yellow" if proj_avg >= 50 else "Red"
                 )
@@ -322,19 +313,17 @@ class MetricasState(rx.State):
                 yaxis=dict(title="", autorange="reversed", tickfont=dict(size=10)),
                 plot_bgcolor="white",
                 paper_bgcolor="white",
+                showlegend=False,
             )
             fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="LightGray")
-            self.gantt_html = fig.to_html(include_plotlyjs="cdn", full_html=False)
-            self.stage_progress = new_stage_progress
-            self.milestone_detail = new_milestone_detail
-            self.health_indicators = new_health
-            overall = total_avg / len(selected_p) if selected_p else 0
-            self.budget_utilization = f"{min(100, int(overall + 8))}%"
-            self.timeline_adherence = f"{int(overall)}%"
-            self.resource_allocation = f"{min(100, int(overall + 3))}%"
+            div_id = "gantt-plotly-chart"
+            fig_json = fig.to_json()
+            dynamic_height = max(500, len(selected_p) * 5 * 30 + 100)
+            self.gantt_html = f'<div id="{div_id}" style="height: {dynamic_height}px; width: 100%;"></div>'
+            script = f"\n            (function() {{\n                var gd = document.getElementById('{div_id}');\n                if (gd && typeof Plotly !== 'undefined') {{\n                    var data = {fig_json};\n                    Plotly.react(gd, data.data, data.layout, {{responsive: true}});\n                }} else {{\n                    setTimeout(function() {{\n                        var gd = document.getElementById('{div_id}');\n                        if (gd && typeof Plotly !== 'undefined') {{\n                            var data = {fig_json};\n                            Plotly.react(gd, data.data, data.layout, {{responsive: true}});\n                        }}\n                    }}, 1500);\n                }}\n            }})();\n            "
+            return rx.call_script(script)
         except Exception as e:
             logging.exception(f"Error calculating metrics: {e}")
-            self.gantt_html = ""
 
     @rx.event
     def export_resumen_etapas(self):
@@ -342,20 +331,11 @@ class MetricasState(rx.State):
             return rx.window_alert("No hay datos para exportar.")
         try:
             df = pd.DataFrame(self.stage_progress)
-            cols_to_keep = [
-                "proyecto",
-                "diseno",
-                "fabricacion",
-                "traslado",
-                "instalacion",
-                "entrega",
-            ]
-            df = df[[c for c in cols_to_keep if c in df.columns]]
-            output = io.BytesIO()
-            df.to_csv(output, index=False, encoding="utf-8-sig")
+            output = io.StringIO()
+            df.to_csv(output, index=False)
             return rx.download(data=output.getvalue(), filename="Resumen_Etapas.csv")
         except Exception as e:
-            logging.exception(f"Error exporting resumen: {e}")
+            logging.exception(f"Error exporting: {e}")
 
     @rx.event
     def export_detalle_hitos(self):
@@ -363,54 +343,45 @@ class MetricasState(rx.State):
             return rx.window_alert("No hay datos para exportar.")
         try:
             df = pd.DataFrame(self.milestone_detail)
-            output = io.BytesIO()
-            df.to_csv(output, index=False, encoding="utf-8-sig")
+            output = io.StringIO()
+            df.to_csv(output, index=False)
             return rx.download(data=output.getvalue(), filename="Detalle_Hitos.csv")
         except Exception as e:
-            logging.exception(f"Error exporting hitos: {e}")
+            logging.exception(f"Error exporting: {e}")
 
     @rx.event
-    def export_auditoria(self):
+    async def export_auditoria(self):
         if not self.selected_projects:
-            return rx.window_alert("No hay proyectos seleccionados.")
+            return rx.window_alert("Seleccione proyectos para auditar.")
         try:
             supabase = conectar()
-            proj_ids = [int(x) for x in self.selected_projects]
+            proj_ids = [int(p) for p in self.selected_projects]
             res_prods = (
                 supabase.table("productos")
-                .select("id, codigo_etiqueta")
+                .select("id, codigo_etiqueta, proyecto_id")
                 .in_("proyecto_id", proj_ids)
                 .execute()
             )
             if not res_prods.data:
                 return rx.window_alert("No hay productos.")
-            prod_df = pd.DataFrame(res_prods.data)
-            prod_ids_list = prod_df["id"].tolist()
+            prods = res_prods.data
+            p_ids = [p["id"] for p in prods]
             seg_data = fetch_all_paginated(
                 supabase.table("seguimiento")
                 .select("producto_id, hito")
-                .in_("producto_id", prod_ids_list)
+                .in_("producto_id", p_ids)
             )
-            seg_df = (
-                pd.DataFrame(seg_data)
-                if seg_data
-                else pd.DataFrame(columns=["producto_id", "hito"])
-            )
+            seg_set = set(((r["producto_id"], r["hito"]) for r in seg_data))
             rows = []
-            for _, p in prod_df.iterrows():
-                p_segs = (
-                    seg_df[seg_df["producto_id"] == p["id"]]
-                    if not seg_df.empty
-                    else pd.DataFrame()
-                )
-                row = {"Producto": p["codigo_etiqueta"]}
-                for m in MILESTONES:
-                    row[m] = 1 if not p_segs.empty and m in p_segs["hito"].values else 0
+            for p in prods:
+                row = {"Codigo": p["codigo_etiqueta"]}
+                for h in MILESTONES:
+                    row[h] = 1 if (p["id"], h) in seg_set else 0
                 rows.append(row)
-            df_out = pd.DataFrame(rows)
+            df = pd.DataFrame(rows)
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                df_out.to_excel(writer, index=False, sheet_name="Auditoria")
-            return rx.download(data=output.getvalue(), filename="Auditoria_0_1.xlsx")
+                df.to_excel(writer, index=False, sheet_name="Auditoria")
+            return rx.download(data=output.getvalue(), filename="Auditoria_Piezas.xlsx")
         except Exception as e:
-            logging.exception(f"Error exporting auditoria: {e}")
+            logging.exception(f"Error exporting: {e}")
